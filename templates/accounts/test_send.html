@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Teste de Envio{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-6">Testar Envio de Mensagem</h2>
+
+    {# Bloco para exibir o resultado do envio #}
+    {% if resultado_envio %}
+        {% if resultado_envio.success %}
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Sucesso!</p>
+                <p>A API aceitou a mensagem para o número {{ numero_enviado }}.</p>
+                <pre class="text-xs mt-2 bg-gray-100 p-2 rounded">{{ resultado_envio }}</pre>
+            </div>
+        {% else %}
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Falha no Envio</p>
+                <p>A API retornou um erro: {{ resultado_envio.error }}</p>
+                <pre class="text-xs mt-2 bg-gray-100 p-2 rounded">{{ resultado_envio }}</pre>
+            </div>
+        {% endif %}
+    {% endif %}
+
+    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
+        <p class="font-bold">Instruções</p>
+        <p class="text-sm">Use esta página para enviar uma mensagem de teste para qualquer número e verificar se sua instância do WhatsApp está funcionando corretamente.</p>
+    </div>
+
+    <form method="POST" action="{% url 'accounts:test_send' %}">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="numero" class="block text-gray-700 text-sm font-bold mb-2">Número do WhatsApp:</label>
+            <input type="text" name="numero" id="numero" required
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                   placeholder="Ex: (11) 99999-8888">
+            <p class="text-xs text-gray-500 mt-1">Inclua o DDD. O DDI (55) será adicionado automaticamente.</p>
+        </div>
+
+        <div class="mb-6">
+            <label for="mensagem" class="block text-gray-700 text-sm font-bold mb-2">Mensagem:</label>
+            <textarea name="mensagem" id="mensagem" rows="6" required
+                      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="Digite sua mensagem de teste aqui."></textarea>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <i class="fas fa-paper-plane mr-2"></i>Enviar Mensagem de Teste
+            </button>
+            <a href="{% url 'accounts:whatsapp_instance' %}" class="inline-block align-baseline font-bold text-sm text-gray-600 hover:text-gray-800">
+                Voltar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

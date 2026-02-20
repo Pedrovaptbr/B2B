@@ -1,0 +1,41 @@
+{% extends 'base_public.html' %}
+{% block title %}Criar Conta - B2BZAP{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold text-center mb-6">Criar Conta</h2>
+
+{% if form.errors %}
+    <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6" role="alert">
+        <p class="font-bold">Por favor, corrija os erros abaixo:</p>
+        <ul class="list-disc ml-5 mt-2">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de usuário</label>
+        <input type="text" name="username" id="{{ form.username.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+    </div>
+    <div>
+        <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
+        <input type="password" name="password1" id="{{ form.password1.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+    </div>
+    <div>
+        <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700">Confirmação de senha</label>
+        <input type="password" name="password2" id="{{ form.password2.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+    </div>
+
+    <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Cadastrar</button>
+</form>
+
+<p class="text-center text-sm text-gray-600 mt-4">
+    Já tem uma conta? <a href="{% url 'login' %}" class="font-medium text-blue-600 hover:underline">Faça login</a>
+</p>
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Conectar B2BZap</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        #qrcode-container { margin-top: 20px; min-height: 250px; }
+        img { border: 1px solid #ccc; border-radius: 10px; }
+        .status { color: #666; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <h1>Conectar WhatsApp</h1>
+    <p>Escaneie o QR Code abaixo para ativar sua instância no B2BZap.</p>
+
+    <div id="qrcode-container">
+        <p class="status" id="loading-text">Gerando QR Code...</p>
+        <img id="qrcode-img" src="" style="display: none;" width="250">
+    </div>
+
+    <script>
+        // Configurações da sua API
+        const API_URL = "http://localhost:8081";
+        const API_KEY = "b2bkey";
+        const INSTANCE_NAME = "B2BZap";
+
+        async function carregarQRCode() {
+            const url = `${API_URL}/instance/connect/${INSTANCE_NAME}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': API_KEY
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.base64) {
+                    // A Evolution retorna o Base64 no formato: data:image/png;base64,iVBOR...
+                    const imgElement = document.getElementById('qrcode-img');
+                    imgElement.src = data.base64;
+                    imgElement.style.display = 'inline-block';
+                    document.getElementById('loading-text').innerText = "QR Code pronto! Escaneie agora.";
+                } else {
+                    document.getElementById('loading-text').innerText = "Instância já conectada ou erro ao gerar.";
+                }
+
+            } catch (error) {
+                console.error("Erro ao buscar QR Code:", error);
+                document.getElementById('loading-text').innerText = "Erro ao conectar com a Evolution API.";
+            }
+        }
+
+        // Inicia a busca ao carregar a página
+        carregarQRCode();
+    </script>
+</body>
+</html>

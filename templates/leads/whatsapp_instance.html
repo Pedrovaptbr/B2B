@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Conexão WhatsApp{% endblock %}
+{% block content %}
+    <h2>Conexão WhatsApp</h2>
+    <p>Status: <strong>{{ instance.get_status_display }}</strong></p>
+
+    {% if instance.status == 'CONNECTING' and instance.qr_code_base64 %}
+        <h3>Escaneie para Conectar</h3>
+        <p>Após escanear, aguarde e recarregue a página (F5).</p>
+        <img src="data:image/png;base64,{{ instance.qr_code_base64 }}" alt="QR Code">
+    {% elif instance.status == 'CONNECTED' %}
+        <h3>Conectado!</h3>
+        <a href="{% url 'leads:test_send' %}">Testar Envio de Mensagem</a>
+    {% endif %}
+
+    <form method="POST" style="margin-top: 20px;">
+        {% csrf_token %}
+        <button type="submit">Resetar Instância</button>
+    </form>
+{% endblock %}

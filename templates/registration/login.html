@@ -1,0 +1,37 @@
+{% extends 'base_public.html' %}
+{% block title %}Login - B2BZAP{% endblock %}
+
+{% block content %}
+<h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+
+{% if form.errors %}
+    <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6" role="alert">
+        <p>Seu nome de usuário e senha não correspondem. Por favor, tente novamente.</p>
+    </div>
+{% endif %}
+
+<form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de usuário</label>
+        <input type="text" name="username" id="{{ form.username.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+    </div>
+    <div>
+        <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
+        <input type="password" name="password" id="{{ form.password.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+    </div>
+
+    <div class="flex items-center justify-between mt-4">
+        <label class="flex items-center">
+            <input type="checkbox" name="remember_me" class="rounded border-gray-300 text-blue-600 shadow-sm">
+            <span class="ml-2 text-sm text-gray-600">Permanecer Conectado</span>
+        </label>
+    </div>
+
+    <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Entrar</button>
+</form>
+
+<p class="text-center text-sm text-gray-600 mt-4">
+    Não tem uma conta? <a href="{% url 'register' %}" class="font-medium text-blue-600 hover:underline">Cadastre-se</a>
+</p>
+{% endblock %}

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Bem-vindo ao B2BZAP</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col items-center justify-center text-center p-8">
+        <h1 class="text-5xl font-bold text-blue-600 mb-4">B2BZAP</h1>
+        <p class="text-xl text-gray-600 max-w-2xl mb-8">
+            Transforme sua prospecção. Encontre, qualifique e contate leads B2B de forma inteligente, economizando tempo e créditos de API.
+        </p>
+        <div class="flex space-x-4">
+            <a href="{% url 'accounts:register' %}" class="px-8 py-3 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Vamos Começar</a>
+            <a href="{% url 'accounts:login' %}" class="px-8 py-3 font-semibold text-blue-700 bg-white border border-blue-600 rounded-md hover:bg-gray-50">Já tenho conta</a>
+        </div>
+    </div>
+</body>
+</html>

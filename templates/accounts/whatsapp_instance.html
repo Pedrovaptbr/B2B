@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Conexão WhatsApp{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto text-center">
+    <h1 class="text-2xl font-bold mb-4">Conexão WhatsApp</h1>
+    <p class="mb-4">Status:
+        <strong class="font-bold
+            {% if instance.status == 'CONNECTED' or instance.status == 'OPEN' %}
+                text-green-600
+            {% elif instance.status == 'DISCONNECTED' and not instance.qr_code_base64 %}
+                text-red-600
+            {% else %}
+                text-yellow-600
+            {% endif %}">
+            {% if instance.status == 'DISCONNECTED' and instance.qr_code_base64 %}
+                Aguardando conexão
+            {% else %}
+                {{ instance.get_status_display }}
+            {% endif %}
+        </strong>
+    </p>
+
+    {% if instance.status != 'CONNECTED' and instance.status != 'OPEN' and instance.qr_code_base64 %}
+        <div id="qr-code-container">
+            <h3 class="font-semibold">Escaneie para Conectar</h3>
+            <p class="text-sm text-gray-500 mb-2">A página irá recarregar automaticamente.</p>
+            <img class="mx-auto border-4 border-gray-200 rounded-lg" src="data:image/png;base64,{{ instance.qr_code_base64 }}" alt="QR Code do WhatsApp">
+        </div>
+    {% endif %}
+
+    {% if instance.status == 'CONNECTED' or instance.status == 'OPEN' %}
+        <div id="connected-container">
+            <div class="p-4 bg-green-100 text-green-800 rounded-lg">
+                <h3 class="font-bold">Conectado!</h3>
+                <p>Sua instância está pronta para validar e enviar mensagens.</p>
+            </div>
+            <a href="{% url 'accounts:test_send' %}" class="mt-4 inline-block px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                <i class="fas fa-paper-plane mr-2"></i>Testar Envio
+            </a>
+        </div>
+    {% endif %}
+
+    <form method="POST" action="{% url 'accounts:whatsapp_instance' %}" class="mt-6">
+        {% csrf_token %}
+        <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Resetar Instância</button>
+    </form>
+</div>
+
+{% if instance.status != 'CONNECTED' and instance.status != 'OPEN' and instance.qr_code_base64 %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusApiUrl = "{% url 'accounts:whatsapp_status_api' %}";
+
+        const intervalId = setInterval(() => {
+            fetch(statusApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const newStatus = data.status ? data.status.toUpperCase() : 'DISCONNECTED';
+                    if (newStatus === 'CONNECTED' || newStatus === 'OPEN') {
+                        clearInterval(intervalId);
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao verificar status:', error);
+                });
+        }, 5000);
+    });
+</script>
+{% endif %}
+{% endblock %}

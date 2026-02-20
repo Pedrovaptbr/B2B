@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Teste de Envio{% endblock %}
+{% block content %}
+    <h2>Teste de Envio</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <p><input type="text" name="numero" placeholder="Número com DDD" required></p>
+        <p><textarea name="mensagem" rows="4" required>Teste!</textarea></p>
+        <button type="submit">Enviar</button>
+    </form>
+    <a href="{% url 'leads:whatsapp_instance' %}">Voltar</a>
+{% endblock %}

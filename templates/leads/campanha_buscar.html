@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}Buscar Leads para: {{ campanha.nome }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'leads:campanha_detalhes' pk=campanha.pk %}" class="text-blue-600 hover:underline"><i class="fas fa-arrow-left mr-2"></i>Voltar para a Campanha</a>
+    <h1 class="text-3xl font-bold">Buscar Leads para: {{ campanha.nome }}</h1>
+</div>
+
+<!-- Barra de Busca no Topo -->
+<div class="bg-white p-4 rounded-lg shadow-md mb-6 sticky top-0 z-10">
+    <form method="GET" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label for="tipo_empresa" class="block text-sm font-medium text-gray-700">Tipo de Empresa</label>
+                <input type="text" name="tipo_empresa" id="tipo_empresa" placeholder="Ex: Restaurante, Hotel, Oficina" value="{{ request.GET.tipo_empresa|default:'' }}" class="mt-1 block w-full p-2 border rounded-md" required>
+            </div>
+            <div>
+                <label for="estado" class="block text-sm font-medium text-gray-700">Estado</label>
+                <select name="estado_id" id="estado" class="mt-1 block w-full p-2 border rounded-md" required>
+                    <option value="">Selecione um estado...</option>
+                    {% for estado in estados %}
+                        <option value="{{ estado.id }}" data-sigla="{{ estado.sigla }}" {% if request.GET.estado_id == estado.id|stringformat:"s" %}selected{% endif %}>{{ estado.nome }}</option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" name="estado" id="estado_sigla" value="{{ request.GET.estado|default:'' }}">
+            </div>
+            <div>
+                <label for="cidade" class="block text-sm font-medium text-gray-700">Cidade</label>
+                <select name="cidade" id="cidade" class="mt-1 block w-full p-2 border rounded-md" required>
+                    <option value="">Selecione um estado primeiro...</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end">
+            <button type="submit" class="px-6 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                <i class="fas fa-search mr-2"></i>Buscar Leads
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Histórico de Buscas -->
+{% if historico_buscas %}
+<div class="mb-6">
+    <h3 class="text-sm font-semibold text-gray-600 mb-2">Buscas Recentes:</h3>
+    <div class="flex flex-wrap gap-2">
+        {% for busca in historico_buscas %}
+            <a href="?tipo_empresa={{ busca.tipo_empresa|urlencode }}&cidade={{ busca.cidade|urlencode }}&estado={{ busca.estado|urlencode }}"
+               class="px-3 py-1 text-sm text-blue-700 bg-blue-100 rounded-full hover:bg-blue-200">
+                {{ busca }}
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+<!-- Resultados da Busca -->
+<div class="space-y-4">
+    {% for result in search_results %}
+        <div class="bg-white p-4 rounded-lg shadow-md">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-lg font-bold">{{ result.name }}</h3>
+                    <p class="text-sm text-gray-500">{{ result.formatted_address }}</p>
+                    <p class="text-sm text-gray-500 mt-1">
+                        <i class="fas fa-star text-yellow-400"></i>
+                        <strong>{{ result.rating|default:'N/A' }}</strong>
+                        <span class="text-gray-400"> ({{ result.user_ratings_total|default:0 }} avaliações)</span>
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2 flex-shrink-0 ml-4">
+                    {% if result.ja_esta_na_campanha %}
+                        <span class="px-3 py-2 text-sm font-bold text-gray-600 bg-gray-200 rounded-md">Na Campanha</span>
+                    {% elif result.ja_foi_extraido %}
+                        <a href="{% url 'leads:extract_lead' campanha_id=campanha.id place_id=result.place_id %}?{{ request.GET.urlencode }}"
+                           class="flex items-center px-3 py-2 text-sm font-bold text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                           title="Adicionar à campanha (grátis)">
+                           <i class="fab fa-whatsapp mr-2 {% if result.tem_whatsapp %}text-green-300{% else %}text-gray-400{% endif %}"></i>
+                           Importar
+                        </a>
+                    {% else %}
+                        <a href="{% url 'leads:extract_lead' campanha_id=campanha.id place_id=result.place_id %}?{{ request.GET.urlencode }}"
+                           class="px-3 py-2 text-sm font-bold text-white bg-green-500 rounded-md hover:bg-green-600"
+                           title="Custo: 1 crédito">
+                           <i class="fas fa-plus mr-1"></i> Extrair
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        {% if request.GET.tipo_empresa %}
+            <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                <p class="text-gray-600">Nenhum resultado encontrado para sua busca.</p>
+            </div>
+        {% else %}
+             <div class="bg-white p-6 rounded-lg shadow-md text-center">
+                <p class="text-gray-600">Use os filtros acima para encontrar novos leads.</p>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const estadoSelect = document.getElementById('estado');
+    const cidadeSelect = document.getElementById('cidade');
+    const estadoSiglaInput = document.getElementById('estado_sigla');
+    const cidadesApiUrlBase = "{% url 'leads:campaign_list' %}api/cidades/";
+
+    function carregarCidades(estadoId, cidadeSelecionada) {
+        if (!estadoId) {
+            cidadeSelect.innerHTML = '<option value="">Selecione um estado primeiro...</option>';
+            return;
+        }
+
+        fetch(`${cidadesApiUrlBase}${estadoId}/`)
+            .then(response => response.json())
+            .then(data => {
+                cidadeSelect.innerHTML = '<option value="">Selecione uma cidade...</option>';
+                data.forEach(cidade => {
+                    const option = document.createElement('option');
+                    option.value = cidade.nome;
+                    option.textContent = cidade.nome;
+                    if (cidade.nome === cidadeSelecionada) {
+                        option.selected = true;
+                    }
+                    cidadeSelect.appendChild(option);
+                });
+            });
+    }
+
+    estadoSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const estadoId = selectedOption.value;
+        const estadoSigla = selectedOption.getAttribute('data-sigla');
+        estadoSiglaInput.value = estadoSigla || '';
+        carregarCidades(estadoId, null);
+    });
+
+    // Carregar cidades se um estado já estiver selecionado ao carregar a página
+    const estadoInicialId = estadoSelect.value;
+    const cidadeInicial = "{{ request.GET.cidade|default:'' }}";
+    if (estadoInicialId) {
+        const selectedOption = estadoSelect.options[estadoSelect.selectedIndex];
+        estadoSiglaInput.value = selectedOption.getAttribute('data-sigla') || '';
+        carregarCidades(estadoInicialId, cidadeInicial);
+    }
+});
+</script>
+{% endblock %}

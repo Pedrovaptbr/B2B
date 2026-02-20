@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}Meus Leads{% endblock %}
+
+{% block content %}
+<style>
+    .results-header {
+        margin-bottom: 1.5rem;
+    }
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    .lead-card {
+        background: var(--card-background);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+        border: 1px solid var(--border-color);
+    }
+    .lead-name {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .lead-details {
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+    .lead-details p {
+        margin: 0.25rem 0;
+    }
+    .lead-details a {
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    .lead-details a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="results-header">
+    <h1>Meus Leads Capturados ({{ leads.count }})</h1>
+</div>
+
+{% for lead in leads %}
+    <div class="lead-card">
+        <div class="lead-name">{{ lead.nome }}</div>
+        <div class="lead-details">
+            <p><strong>Nicho:</strong> {{ lead.nicho|default:"Não informado" }}</p>
+            <p><strong>Endereço:</strong> {{ lead.endereco|default:"Não informado" }}</p>
+            <p><strong>Telefone:</strong> {{ lead.telefone|default:"Não informado" }}</p>
+            {% if lead.telefone %}
+                <p><strong>WhatsApp:</strong> <a href="https://wa.me/{{ lead.telefone }}" target="_blank">https://wa.me/{{ lead.telefone }}</a></p>
+            {% endif %}
+            {% if lead.site %}
+                <p><strong>Site:</strong> <a href="{{ lead.site }}" target="_blank">{{ lead.site }}</a></p>
+            {% endif %}
+        </div>
+    </div>
+{% empty %}
+    <div class="lead-card">
+        <p>Você ainda não extraiu nenhum lead. Comece fazendo uma <a href="{% url 'leads:search' %}">nova busca</a>.</p>
+    </div>
+{% endfor %}
+{% endblock %}

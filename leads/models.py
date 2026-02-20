@@ -1,0 +1,54 @@
+from django.db import models
+from django.contrib.auth.models import User
+
+class Campanha(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campanhas')
+    nome = models.CharField(max_length=200)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    leads = models.ManyToManyField('Lead', related_name='campanhas')
+    mensagem_padrao = models.TextField(
+        blank=True, 
+        null=True, 
+        help_text="Mensagem padrão para ser enviada aos leads desta campanha."
+    )
+    
+    class Meta:
+        unique_together = ('user', 'nome')
+        ordering = ['-data_criacao']
+    def __str__(self): return self.nome
+
+class Lead(models.Model):
+    STATUS_CHOICES = [
+        ('Qualificado', 'Qualificado'),
+        ('Contatado', 'Contatado'),
+        ('Respondido', 'Respondido'),
+        ('Negociando', 'Em Negociação'),
+        ('Telefone Inexistente', 'Telefone Inexistente'),
+    ]
+    place_id = models.CharField(max_length=255, unique=True)
+    nome = models.CharField(max_length=255)
+    endereco = models.CharField(max_length=300, blank=True, null=True)
+    telefone = models.CharField(max_length=30, blank=True, null=True)
+    whatsapp = models.CharField(max_length=30, blank=True, null=True)
+    site = models.URLField(max_length=255, blank=True, null=True)
+    rating = models.FloatField(null=True, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Qualificado')
+    
+    # Campo CORRIGIDO: Um lead pode ser propriedade de vários usuários.
+    proprietarios = models.ManyToManyField(User, related_name='leads_adquiridos')
+
+    def __str__(self): return self.nome
+
+class HistoricoBusca(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='historico_buscas')
+    tipo_empresa = models.CharField(max_length=255)
+    cidade = models.CharField(max_length=255)
+    estado = models.CharField(max_length=2) # Armazena a sigla do estado, ex: SC
+    data_busca = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'tipo_empresa', 'cidade', 'estado')
+        ordering = ['-data_busca']
+
+    def __str__(self):
+        return f'{self.tipo_empresa} em {self.cidade}-{self.estado}'

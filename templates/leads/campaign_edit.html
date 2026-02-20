@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Editar Campanha{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-6">Editar Campanha</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="nome_campanha" class="block text-gray-700 text-sm font-bold mb-2">Nome da Campanha:</label>
+            <input type="text" name="nome_campanha" id="nome_campanha" value="{{ campanha.nome }}" required
+                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        </div>
+
+        <div class="mb-6">
+            <label for="mensagem_padrao" class="block text-gray-700 text-sm font-bold mb-2">Mensagem Padrão:</label>
+            <textarea name="mensagem_padrao" id="mensagem_padrao" rows="8"
+                      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      placeholder="Prezados da [nome], meu nome é [Seu Nome] e falo da [Sua Empresa].
+
+Analisamos seu perfil e, por atuarem no setor de [Setor do Lead], acreditamos que nossa solução em [Seu Serviço] pode ser de grande valor.
+
+Gostaria de apresentar como podemos ajudar a [Benefício, ex: otimizar suas vendas]. Seria um bom momento para uma breve conversa?">{{ campanha.mensagem_padrao|default_if_none:'' }}</textarea>
+            <p class="text-xs text-gray-500 mt-1">Use <strong>[nome]</strong> para substituir pelo nome do lead. Personalize o resto do texto.</p>
+        </div>
+
+        <div class="flex items-center justify-between">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Salvar Alterações
+            </button>
+            <a href="{% url 'leads:campanha_detalhes' pk=campanha.pk %}" class="inline-block align-baseline font-bold text-sm text-blue-600 hover:text-blue-800">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
