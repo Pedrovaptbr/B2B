@@ -17,6 +17,6 @@ urlpatterns = [
     path('campanha/<int:campanha_id>/extract/<str:place_id>/', views.extract_lead_view, name='extract_lead'),
     path('campanha/<int:campanha_id>/disparar/', views.disparar_campanha_view, name='disparar_campanha'),
 
-    # URL para a API de cidades
+    # API Interna
     path('api/cidades/<int:uf_id>/', views.get_cidades_por_estado, name='api_get_cidades'),
 ]

@@ -76,8 +76,9 @@
                     <div class="w-3/12">
                         <span class="px-2 py-1 text-xs font-semibold rounded-full
                             {% if lead.status == 'Qualificado' %} bg-blue-200 text-blue-800
+                            {% elif lead.status == 'Verificado' %} bg-green-200 text-green-800
                             {% elif lead.status == 'Contatado' %} bg-yellow-200 text-yellow-800
-                            {% elif lead.status == 'Respondido' %} bg-green-200 text-green-800
+                            {% elif lead.status == 'Respondido' %} bg-green-500 text-white
                             {% elif lead.status == 'Negociando' %} bg-purple-200 text-purple-800
                             {% elif lead.status == 'Telefone Inexistente' %} bg-red-200 text-red-800
                             {% else %} bg-gray-200 text-gray-800

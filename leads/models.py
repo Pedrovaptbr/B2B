@@ -20,9 +20,12 @@ class Campanha(models.Model):
 class Lead(models.Model):
     STATUS_CHOICES = [
         ('Qualificado', 'Qualificado'),
+        ('Verificado', 'Verificado'),
         ('Contatado', 'Contatado'),
         ('Respondido', 'Respondido'),
         ('Negociando', 'Em Negociação'),
+        ('Ganhamos', 'Ganhamos'),
+        ('Perdemos', 'Perdemos'),
         ('Telefone Inexistente', 'Telefone Inexistente'),
     ]
     place_id = models.CharField(max_length=255, unique=True)
@@ -34,7 +37,6 @@ class Lead(models.Model):
     rating = models.FloatField(null=True, blank=True)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Qualificado')
     
-    # Campo CORRIGIDO: Um lead pode ser propriedade de vários usuários.
     proprietarios = models.ManyToManyField(User, related_name='leads_adquiridos')
 
     def __str__(self): return self.nome
@@ -43,7 +45,7 @@ class HistoricoBusca(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='historico_buscas')
     tipo_empresa = models.CharField(max_length=255)
     cidade = models.CharField(max_length=255)
-    estado = models.CharField(max_length=2) # Armazena a sigla do estado, ex: SC
+    estado = models.CharField(max_length=2)
     data_busca = models.DateTimeField(auto_now=True)
 
     class Meta:

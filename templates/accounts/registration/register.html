@@ -2,40 +2,76 @@
 {% block title %}Criar Conta - B2BZAP{% endblock %}
 
 {% block content %}
-<h2 class="text-2xl font-bold text-center mb-6">Criar Conta</h2>
-
-{% if form.errors %}
-    <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6" role="alert">
-        <p class="font-bold">Por favor, corrija os erros abaixo:</p>
-        <ul class="list-disc ml-5 mt-2">
-        {% for field, errors in form.errors.items %}
-            {% for error in errors %}
-                <li>{{ error }}</li>
-            {% endfor %}
-        {% endfor %}
-        </ul>
-    </div>
-{% endif %}
-
-<form method="post" class="space-y-4">
-    {% csrf_token %}
-    <div>
-        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de usuário</label>
-        <input type="text" name="username" id="{{ form.username.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
-    </div>
-    <div>
-        <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
-        <input type="password" name="password1" id="{{ form.password1.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
-    </div>
-    <div>
-        <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700">Confirmação de senha</label>
-        <input type="password" name="password2" id="{{ form.password2.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+<div x-data="{ step: 'initial_warning' }">
+    <!-- 1. Aviso Inicial com Botão -->
+    <div x-show="step === 'initial_warning'" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="text-center bg-gray-800 p-8 rounded-lg shadow-xl">
+            <h3 class="text-3xl font-bold text-yellow-400">Atenção!</h3>
+            <p class="text-white text-lg mt-2 mb-6">Por favor, leia atentamente o aviso a seguir.</p>
+            <button @click="step = 'disclaimer'" class="px-6 py-2 font-semibold text-gray-900 bg-yellow-400 rounded-md hover:bg-yellow-500">
+                Continuar
+            </button>
+        </div>
     </div>
 
-    <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Cadastrar</button>
-</form>
+    <!-- 2. Modal de Isenção de Responsabilidade -->
+    <div x-show="step === 'disclaimer'" class="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-50 p-4" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-lg w-full">
+            <h3 class="text-xl font-bold text-red-700 text-center">Isenção de Responsabilidade</h3>
+            <div class="text-left text-gray-700 mt-4 space-y-2">
+                <p>O programador e o provedor desta ferramenta <strong>não se responsabilizam</strong> por qualquer banimento ou suspensão de conta do WhatsApp decorrente de seu uso.</p>
+                <p>Esta é uma ferramenta de automação que deve ser usada <strong>por sua conta e risco</strong>. Embora tenham sido tomadas medidas para minimizar os riscos, o abuso da ferramenta ou o envio de mensagens em massa (SPAM) pode resultar em ações punitivas pela Meta (proprietária do WhatsApp).</p>
+                <p>Ao criar sua conta, você declara que leu, entendeu e <strong>concorda com este risco</strong>.</p>
+                <p>Para saber mais sobre as políticas oficiais, acesse: <a href="https://www.whatsapp.com/legal/business-messaging-policy/" target="_blank" class="text-blue-600 hover:underline">Política de Mensagens do WhatsApp Business</a>.</p>
+            </div>
+            <button @click="step = 'form'" class="mt-6 w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                Eu li e concordo
+            </button>
+        </div>
+    </div>
 
-<p class="text-center text-sm text-gray-600 mt-4">
-    Já tem uma conta? <a href="{% url 'accounts:login' %}" class="font-medium text-blue-600 hover:underline">Faça login</a>
-</p>
+    <!-- Conteúdo Original da Página (Formulário) -->
+    <div :class="{ 'blur-sm pointer-events-none': step !== 'form' }">
+        <h2 class="text-2xl font-bold text-center mb-6">Criar Conta</h2>
+
+        {% if form.errors %}
+            <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Por favor, corrija os erros abaixo:</p>
+                <ul class="list-disc ml-5 mt-2">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de usuário</label>
+                <input type="text" name="username" id="{{ form.username.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+            </div>
+            <div>
+                <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
+                <input type="password" name="password1" id="{{ form.password1.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+            </div>
+            <div>
+                <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700">Confirmação de senha</label>
+                <input type="password" name="password2" id="{{ form.password2.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm" required>
+            </div>
+
+            <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Cadastrar</button>
+        </form>
+
+        <p class="text-center text-sm text-gray-600 mt-4">
+            Já tem uma conta? <a href="{% url 'accounts:login' %}" class="font-medium text-blue-600 hover:underline">Faça login</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 {% endblock %}

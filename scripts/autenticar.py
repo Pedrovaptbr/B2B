@@ -48,5 +48,5 @@ def verificar_whatsapp(numero):
 
 
 # --- TESTE PRÁTICO ---
-numero_teste = "5548999999999"
+numero_teste = "5548999003582"
 tem_whats = verificar_whatsapp(numero_teste)

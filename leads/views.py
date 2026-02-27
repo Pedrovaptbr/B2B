@@ -15,6 +15,10 @@ from .models import Campanha, Lead, HistoricoBusca
 from accounts.models import PerfilUsuario, WhatsappInstance
 from . import services
 
+# Configura o logger para exibir mensagens de debug
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
 # --- Views de Campanhas (CRUD) ---
 
 @login_required
@@ -133,36 +137,42 @@ def extract_lead_view(request, campanha_id, place_id):
     perfil = PerfilUsuario.objects.select_for_update().get(user=request.user)
     redirect_url = f"{reverse('leads:campanha_buscar', kwargs={'pk': campanha.id})}?{request.GET.urlencode()}"
 
-    lead, criado = Lead.objects.get_or_create(place_id=place_id)
+    lead, criado = Lead.objects.get_or_create(
+        place_id=place_id,
+        defaults={'nome': f'Lead Provisório - {place_id}'}
+    )
 
     if lead in campanha.leads.all():
         messages.warning(request, f"Lead '{lead.nome}' já está nesta campanha.")
         return redirect(redirect_url)
 
-    # Verifica se o usuário já é proprietário deste lead
     usuario_ja_e_proprietario = lead.proprietarios.filter(pk=request.user.pk).exists()
 
     if not usuario_ja_e_proprietario:
         if perfil.creditos_disponiveis <= 0:
             messages.error(request, "Créditos insuficientes para extrair novo lead.")
-            if criado: lead.delete() # Apaga o lead se foi recém-criado e não há créditos
+            if criado: lead.delete()
             return redirect(redirect_url)
         
-        # Se o lead foi criado agora, preenche os detalhes
-        if criado:
+        if criado or 'Lead Provisório' in lead.nome:
             details = services.get_google_place_details(place_id)
             if not details:
                 messages.error(request, "Não foi possível obter detalhes do Google.")
-                lead.delete()
+                if criado: lead.delete()
                 return redirect(redirect_url)
 
             telefone_formatado = details.get('formatted_phone_number')
             numero_internacional = details.get('international_phone_number')
             whatsapp_limpo = ""
+            
             if numero_internacional:
                 whatsapp_limpo = re.sub(r'\D', '', numero_internacional)
             elif telefone_formatado:
-                whatsapp_limpo = '55' + re.sub(r'\D', '', telefone_formatado)
+                numero_apenas_digitos = re.sub(r'\D', '', telefone_formatado)
+                if numero_apenas_digitos.startswith('55'):
+                    whatsapp_limpo = numero_apenas_digitos
+                else:
+                    whatsapp_limpo = '55' + numero_apenas_digitos
 
             lead.nome = details.get('name', 'Nome Indisponível')
             lead.endereco = details.get('formatted_address')
@@ -174,8 +184,9 @@ def extract_lead_view(request, campanha_id, place_id):
             try:
                 instance = request.user.whatsapp_instance
                 if whatsapp_limpo and instance.status == 'CONNECTED':
-                    check_result = services.check_whatsapp_contact(instance.instance_name, instance.instance_token, whatsapp_limpo)
-                    lead.status = 'Telefone Inexistente' if not check_result.get("exists") else 'Qualificado'
+                    check_results = services.verify_whatsapp_numbers(instance.instance_name, [whatsapp_limpo])
+                    number_check = check_results.get(whatsapp_limpo, {})
+                    lead.status = 'Telefone Inexistente' if not number_check.get("exists") else 'Qualificado'
                 else:
                     lead.status = 'Qualificado'
             except WhatsappInstance.DoesNotExist:
@@ -183,7 +194,6 @@ def extract_lead_view(request, campanha_id, place_id):
             
             lead.save()
 
-        # Debita crédito e adiciona o usuário como proprietário
         perfil.creditos_disponiveis -= 1
         perfil.total_extraido += 1
         perfil.save()
@@ -198,39 +208,62 @@ def extract_lead_view(request, campanha_id, place_id):
 
 @login_required
 def validar_contatos_view(request, pk):
+    log.debug("--- INICIANDO VIEW 'validar_contatos_view' ---")
     campanha = get_object_or_404(Campanha, pk=pk, user=request.user)
     
     try:
         instance = request.user.whatsapp_instance
         connection_state = services.get_instance_connection_state(instance.instance_name)
+        log.debug(f"Status da conexão da instância '{instance.instance_name}': {connection_state}")
+
         if connection_state.upper() not in ['CONNECTED', 'OPEN']:
             messages.error(request, f"Sua instância do WhatsApp precisa estar conectada para validar. Status atual: {connection_state}")
+            log.warning("Validação interrompida: Instância não está conectada.")
             return redirect('accounts:whatsapp_instance')
     except WhatsappInstance.DoesNotExist:
         messages.error(request, "Configure sua instância do WhatsApp primeiro.")
+        log.error("Validação interrompida: Instância do WhatsApp não encontrada para o usuário.")
         return redirect('accounts:whatsapp_instance')
 
     leads_para_validar = campanha.leads.filter(status='Qualificado')
+    log.debug(f"Encontrados {leads_para_validar.count()} leads com status 'Qualificado'.")
     if not leads_para_validar.exists():
-        messages.info(request, "Nenhum lead novo para validar nesta campanha.")
+        messages.info(request, "Nenhum lead com status 'Qualificado' para validar nesta campanha.")
         return redirect('leads:campanha_detalhes', pk=pk)
 
-    validos, invalidos = 0, 0
-    for lead in leads_para_validar:
-        if lead.whatsapp:
-            check_result = services.check_whatsapp_contact(instance.instance_name, instance.instance_token, lead.whatsapp)
-            if not check_result.get("exists"):
+    numeros_para_validar = [lead.whatsapp for lead in leads_para_validar if lead.whatsapp]
+    if not numeros_para_validar:
+        messages.info(request, "Nenhum lead com número de WhatsApp para validar.")
+        return redirect('leads:campanha_detalhes', pk=pk)
+
+    resultados_validacao = services.verify_whatsapp_numbers(instance.instance_name, numeros_para_validar)
+    log.debug(f"Resultados recebidos da função de serviço: {resultados_validacao}")
+    
+    verificados, invalidos = 0, 0
+    with transaction.atomic():
+        for lead in leads_para_validar:
+            if lead.whatsapp in resultados_validacao:
+                resultado = resultados_validacao[lead.whatsapp]
+                log.debug(f"Processando lead '{lead.nome}' ({lead.whatsapp}). Resultado da API: {resultado}")
+                if resultado.get('exists'):
+                    lead.status = 'Verificado'
+                    lead.save()
+                    verificados += 1
+                    log.debug(f"  -> Marcado como VERIFICADO.")
+                else:
+                    lead.status = 'Telefone Inexistente'
+                    lead.save()
+                    invalidos += 1
+                    log.debug(f"  -> Marcado como INEXISTENTE. Razão: {resultado.get('reason')}")
+            elif not lead.whatsapp:
                 lead.status = 'Telefone Inexistente'
                 lead.save()
                 invalidos += 1
-            else:
-                validos += 1
-        else:
-            lead.status = 'Telefone Inexistente'
-            lead.save()
-            invalidos += 1
+                log.debug(f"Processando lead '{lead.nome}'. Marcado como INEXISTENTE (sem WhatsApp).")
             
-    messages.success(request, f"Validação concluída! {validos} contatos válidos e {invalidos} inválidos foram encontrados.")
+    log.debug(f"Validação finalizada. Verificados: {verificados}, Inválidos: {invalidos}")
+    messages.success(request, f"Validação concluída! {verificados} contatos verificados e {invalidos} inválidos foram encontrados.")
+    log.debug("--- FIM DA VIEW 'validar_contatos_view' ---")
     return redirect('leads:campanha_detalhes', pk=pk)
 
 @login_required

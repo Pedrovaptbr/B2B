@@ -1,0 +1,21 @@
+# Ambiente Virtual
+.venv/
+venv/
+
+# Arquivos do Editor
+.idea/
+
+# Arquivos de Segredos
+.env
+
+# Banco de Dados Local
+*.sqlite3
+
+# Cache do Python
+__pycache__/
+
+# Logs
+django.log
+
+# Armazenamento da Evolution API
+evolution_store/
