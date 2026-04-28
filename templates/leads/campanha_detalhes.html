@@ -102,6 +102,14 @@
                             <p><strong>Avaliação Google:</strong> <i class="fas fa-star text-yellow-400"></i> {{ lead.rating|default:"N/A" }}</p>
                         </div>
                     </div>
+                    {% if lead.whatsapp %}
+                    <div class="mt-3 pt-3 border-t border-gray-200">
+                        <a href="{% url 'leads:conversa_lead' lead_id=lead.id %}"
+                           class="inline-flex items-center px-3 py-1.5 text-sm font-semibold text-white bg-green-500 rounded-md hover:bg-green-600 transition-colors">
+                            <i class="fab fa-whatsapp mr-2"></i>Ver Conversa
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}

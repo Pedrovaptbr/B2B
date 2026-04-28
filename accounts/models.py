@@ -5,9 +5,20 @@ from django.dispatch import receiver
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
-    creditos_disponiveis = models.IntegerField(default=0)
-    total_extraido = models.PositiveIntegerField(default=0)
-    def __str__(self): return f"Perfil de {self.user.username}"
+    creditos_disponiveis = models.IntegerField(default=10)
+    total_extraido = models.IntegerField(default=0)
+    plano_ativo = models.BooleanField(default=False)
+
+    # ── Stripe ────────────────────────────────────────────────────────────────
+    stripe_customer_id     = models.CharField(max_length=100, blank=True, null=True)
+    stripe_subscription_id = models.CharField(max_length=100, blank=True, null=True)
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
+
+    @property
+    def total_leads_adquiridos(self):
+        return self.user.leads_adquiridos.count()
 
 @receiver(post_save, sender=User)
 def criar_ou_atualizar_perfil_usuario(sender, instance, created, **kwargs):

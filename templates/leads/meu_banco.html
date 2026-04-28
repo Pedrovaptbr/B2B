@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Meu Banco de Leads{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold">Meu Banco de Leads</h1>
+            <p class="text-gray-600">Todos os leads que você já extraiu estão aqui. Apague leads para liberar espaço.</p>
+        </div>
+        <div class="text-right">
+            <span class="text-lg font-semibold text-gray-700">
+                {{ user.perfil.total_leads_adquiridos }} lead(s) no banco
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md">
+    <div class="space-y-3">
+        {% for lead in leads %}
+            <div class="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
+                <div>
+                    <p class="font-semibold text-gray-800">{{ lead.nome }}</p>
+                    <p class="text-sm text-gray-500">{{ lead.whatsapp|default:"Sem WhatsApp" }}</p>
+                </div>
+                <form method="POST" onsubmit="return confirm('Tem certeza que deseja apagar este lead do seu banco de dados? Esta ação não pode ser desfeita.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                    <button type="submit" class="px-3 py-1 text-sm font-semibold text-red-600 bg-red-100 rounded-md hover:bg-red-200" title="Apagar Lead">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </form>
+            </div>
+        {% empty %}
+            <p class="text-center text-gray-500 py-8">Seu banco de leads está vazio.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -10,9 +10,9 @@ from .models import PerfilUsuario, WhatsappInstance
 class PerfilUsuarioInline(admin.StackedInline):
     model = PerfilUsuario
     can_delete = False
-    verbose_name_plural = 'Perfil de Créditos'
-    fields = ('creditos_disponiveis',)
-    readonly_fields = ('total_extraido',)
+    verbose_name_plural = 'Perfil do Usuário'
+    readonly_fields = ('total_leads_adquiridos',)
+    fields = ('total_leads_adquiridos',)
 
 class WhatsappInstanceInline(admin.StackedInline):
     model = WhatsappInstance
@@ -23,10 +23,9 @@ class WhatsappInstanceInline(admin.StackedInline):
 
 # --- A "Super View" do Usuário ---
 
-# 1. Definimos a classe customizada sem o decorador
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (PerfilUsuarioInline, WhatsappInstanceInline)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_creditos')
+    list_display = ('username', 'email', 'is_staff')
     
     readonly_fields = ('date_joined', 'last_login', 'view_leads_link', 'view_historico_link')
 
@@ -37,14 +36,6 @@ class CustomUserAdmin(BaseUserAdmin):
         ('Permissões', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Datas Importantes', {'fields': ('date_joined', 'last_login')}),
     )
-
-    @admin.display(description='Créditos')
-    def get_creditos(self, obj):
-        # Adicionado um 'try' para evitar erros se o perfil ainda não existir
-        try:
-            return obj.perfil.creditos_disponiveis
-        except PerfilUsuario.DoesNotExist:
-            return 0
 
     @admin.display(description='Leads Adquiridos')
     def view_leads_link(self, obj):
@@ -64,11 +55,9 @@ class CustomUserAdmin(BaseUserAdmin):
         )
         return format_html('<a href="{}">Ver {} Buscas</a>', url, count)
 
-# 2. Desregistramos o UserAdmin padrão
+# Desregistra e registra o UserAdmin
 admin.site.unregister(User)
-# 3. Registramos o nosso UserAdmin customizado
 admin.site.register(User, CustomUserAdmin)
-
 
 @admin.register(WhatsappInstance)
 class WhatsappInstanceAdmin(admin.ModelAdmin):

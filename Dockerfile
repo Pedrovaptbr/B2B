@@ -26,11 +26,8 @@ COPY . .
 # Garante que o script de inicialização tenha permissão de execução (boa prática)
 RUN chmod +x /app/run.sh
 
-# Coleta os arquivos estáticos para serem servidos pelo WhiteNoise
-RUN python manage.py collectstatic --noinput
-
 # Expõe a porta que o gunicorn irá usar
-EXPOSE 8080
+EXPOSE 8000
 
 # --- CORREÇÃO DEFINITIVA ---
 # Define o comando para iniciar a aplicação de forma explícita,

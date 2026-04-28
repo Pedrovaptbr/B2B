@@ -13,9 +13,28 @@ venv/
 
 # Cache do Python
 __pycache__/
+*.pyc
+*.pyo
+
+# Claude (ferramenta interna)
+.claude/
 
 # Logs
 django.log
 
 # Armazenamento da Evolution API
 evolution_store/
+
+# Binários e ferramentas locais
+ngrok.exe
+stripe.exe
+stripe.zip
+cloudflared
+cloudflared.exe
+
+# Envs de referência (contêm segredos)
+.env.test
+.env.production
+
+# Estáticos coletados (gerados no build)
+staticfiles/

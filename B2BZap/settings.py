@@ -8,12 +8,20 @@ load_dotenv(BASE_DIR / '.env')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'mudar-na-producao-123')
 
-ALLOWED_HOSTS = ['72.61.53.210', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['72.61.53.210', 'localhost', '127.0.0.1', 'b2bzap.duckdns.org', 'iridescently-tackless-morgan.ngrok-free.dev']
 
 # Chaves de API externas
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
 EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY')
+
+# ── Stripe ────────────────────────────────────────────────────────────────────
+STRIPE_PUBLIC_KEY  = os.getenv('STRIPE_PUBLIC_KEY', '')   # pk_live_... ou pk_test_...
+STRIPE_SECRET_KEY  = os.getenv('STRIPE_SECRET_KEY', '')   # sk_live_... ou sk_test_...
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')  # whsec_...
+STRIPE_PRICE_ID    = os.getenv('STRIPE_PRICE_ID', '')     # price_... (plano mensal no dashboard)
+# URL base do seu site — usada para montar success_url e cancel_url no Checkout
+SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = [
     'django.contrib.admin',

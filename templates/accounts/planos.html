@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Planos — B2BZap{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="text-center mb-10">
+        <h1 class="text-3xl font-bold text-gray-800">Planos e Preços</h1>
+        <p class="text-gray-500 mt-2">Escolha o plano ideal para o seu negócio</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Plano Gratuito -->
+        <div class="bg-white rounded-xl shadow p-6 border border-gray-200 flex flex-col">
+            <div class="mb-4">
+                <span class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Gratuito</span>
+                <div class="mt-2 flex items-end">
+                    <span class="text-4xl font-bold text-gray-800">R$ 0</span>
+                </div>
+                <p class="text-gray-500 text-sm mt-1">Para sempre</p>
+            </div>
+            <ul class="space-y-3 text-sm text-gray-600 flex-1">
+                <li class="flex items-center"><i class="fas fa-check text-green-500 w-5"></i> 10 créditos de extração</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 w-5"></i> Campanhas ilimitadas</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-500 w-5"></i> Busca no Google Places</li>
+                <li class="flex items-center text-gray-400"><i class="fas fa-times w-5"></i> Recarga mensal de créditos</li>
+                <li class="flex items-center text-gray-400"><i class="fas fa-times w-5"></i> Suporte prioritário</li>
+            </ul>
+            <div class="mt-6">
+                <button disabled class="w-full py-2 px-4 rounded-lg font-semibold bg-gray-100 text-gray-500 cursor-default">
+                    {% if not request.user.perfil.plano_ativo %}Plano atual{% else %}Plano básico{% endif %}
+                </button>
+            </div>
+        </div>
+
+        <!-- Plano Pro -->
+        <div class="bg-blue-600 rounded-xl shadow-lg p-6 border border-blue-500 flex flex-col text-white relative">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full uppercase">Recomendado</span>
+            </div>
+            <div class="mb-4">
+                <span class="text-sm font-semibold text-blue-200 uppercase tracking-wide">Pro</span>
+                <div class="mt-2 flex items-end">
+                    <span class="text-4xl font-bold">R$ 27,90</span>
+                    <span class="text-blue-200 ml-2 mb-1">/mês</span>
+                </div>
+                <p class="text-blue-200 text-sm mt-1">Cobrado mensalmente</p>
+            </div>
+            <ul class="space-y-3 text-sm flex-1">
+                <li class="flex items-center"><i class="fas fa-check text-green-300 w-5"></i> 100 créditos por mês</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-300 w-5"></i> Campanhas ilimitadas</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-300 w-5"></i> Busca no Google Places</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-300 w-5"></i> Recarga automática mensal</li>
+                <li class="flex items-center"><i class="fas fa-check text-green-300 w-5"></i> Suporte prioritário</li>
+            </ul>
+            <div class="mt-6 space-y-2">
+                {% if request.user.perfil.plano_ativo %}
+                    <button disabled class="w-full py-2 px-4 rounded-lg font-semibold bg-white/20 text-white cursor-default">
+                        ✓ Plano atual
+                    </button>
+                    <a href="{% url 'accounts:stripe_portal' %}"
+                       class="block w-full text-center py-2 px-4 rounded-lg font-semibold bg-white/10 hover:bg-white/20 text-white text-sm transition-colors">
+                        <i class="fas fa-cog mr-1"></i> Gerenciar assinatura
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:stripe_checkout' %}"
+                       class="block w-full text-center py-2 px-4 rounded-lg font-semibold bg-white text-blue-600 hover:bg-blue-50 transition-colors">
+                        <i class="fas fa-lock mr-1"></i> Assinar agora — R$ 27,90/mês
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Créditos atuais -->
+    <div class="mt-8 bg-white rounded-xl shadow p-5 border border-gray-200 flex items-center justify-between">
+        <div>
+            <p class="text-sm text-gray-500">Seus créditos disponíveis</p>
+            <p class="text-2xl font-bold text-gray-800">{{ request.user.perfil.creditos_disponiveis }} crédito(s)</p>
+        </div>
+        <div class="text-right text-sm text-gray-500">
+            <p>Cada extração de lead consome 1 crédito.</p>
+            <p>Importar leads do seu cofre é <strong class="text-green-600">gratuito</strong>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

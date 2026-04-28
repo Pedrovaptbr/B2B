@@ -41,6 +41,22 @@ class Lead(models.Model):
 
     def __str__(self): return self.nome
 
+class TemplateMensagem(models.Model):
+    """Template de mensagem reutilizável, associável a campanhas."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='templates_mensagem')
+    nome = models.CharField(max_length=100)
+    texto = models.TextField()
+    campanhas = models.ManyToManyField('Campanha', related_name='templates', blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['nome']
+        unique_together = ('user', 'nome')
+
+    def __str__(self):
+        return self.nome
+
+
 class HistoricoBusca(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='historico_buscas')
     tipo_empresa = models.CharField(max_length=255)

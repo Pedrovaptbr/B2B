@@ -1,20 +1,331 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <title>Bem-vindo ao B2BZAP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B2BZap — Prospecção inteligente via WhatsApp</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 50%, #075E54 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gradient-green {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+        }
+
+        .card-glow:hover {
+            box-shadow: 0 0 30px rgba(37, 211, 102, 0.15);
+            transform: translateY(-4px);
+            transition: all 0.3s ease;
+        }
+
+        .card-glow {
+            transition: all 0.3s ease;
+        }
+
+        .hero-bg {
+            background: radial-gradient(ellipse at 60% 0%, rgba(37,211,102,0.12) 0%, transparent 60%),
+                        radial-gradient(ellipse at 10% 80%, rgba(18,140,126,0.08) 0%, transparent 50%),
+                        #0a0a0a;
+        }
+
+        .section-bg {
+            background: #0f0f0f;
+        }
+
+        .card-bg {
+            background: #161616;
+            border: 1px solid #222;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .float-anim { animation: float 4s ease-in-out infinite; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeInUp 0.7s ease both; }
+        .fade-in-delay-1 { animation: fadeInUp 0.7s ease 0.15s both; }
+        .fade-in-delay-2 { animation: fadeInUp 0.7s ease 0.3s both; }
+        .fade-in-delay-3 { animation: fadeInUp 0.7s ease 0.45s both; }
+
+        .step-line::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            width: 2px;
+            height: 48px;
+            background: linear-gradient(to bottom, #25D366, transparent);
+            transform: translateX(-50%);
+        }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="min-h-screen flex flex-col items-center justify-center text-center p-8">
-        <h1 class="text-5xl font-bold text-blue-600 mb-4">B2BZAP</h1>
-        <p class="text-xl text-gray-600 max-w-2xl mb-8">
-            Transforme sua prospecção. Encontre, qualifique e contate leads B2B de forma inteligente, economizando tempo e créditos de API.
-        </p>
-        <div class="flex space-x-4">
-            <a href="{% url 'accounts:register' %}" class="px-8 py-3 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Vamos Começar</a>
-            <a href="{% url 'accounts:login' %}" class="px-8 py-3 font-semibold text-blue-700 bg-white border border-blue-600 rounded-md hover:bg-gray-50">Já tenho conta</a>
+<body class="hero-bg text-white">
+
+    <!-- NAV -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-black/40 border-b border-white/5">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg gradient-green flex items-center justify-center">
+                    <i class="fab fa-whatsapp text-white text-lg"></i>
+                </div>
+                <span class="text-lg font-bold tracking-tight">B2BZap</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
+                <a href="#como-funciona" class="hover:text-white transition-colors">Como funciona</a>
+                <a href="#funcionalidades" class="hover:text-white transition-colors">Funcionalidades</a>
+                <a href="#precos" class="hover:text-white transition-colors">Preços</a>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{% url 'accounts:login' %}" class="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2">Entrar</a>
+                <a href="{% url 'accounts:register' %}" class="text-sm font-semibold px-4 py-2 rounded-lg gradient-green hover:opacity-90 transition-opacity">Começar grátis</a>
+            </div>
         </div>
-    </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="pt-32 pb-24 px-6">
+        <div class="max-w-4xl mx-auto text-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 mb-8 fade-in">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                Prospecção B2B automatizada via WhatsApp
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-black leading-tight tracking-tight mb-6 fade-in-delay-1">
+                Encontre clientes.<br>
+                <span class="gradient-text">Feche negócios.</span>
+            </h1>
+
+            <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 fade-in-delay-2">
+                O B2BZap busca leads no Google Maps, extrai contatos e dispara mensagens pelo WhatsApp automaticamente. Tudo em um só lugar.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 fade-in-delay-3">
+                <a href="{% url 'accounts:register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl gradient-green font-bold text-lg hover:opacity-90 transition-all hover:scale-105">
+                    <i class="fab fa-whatsapp"></i>
+                    Começar agora — R$ 27,90/mês
+                </a>
+                <a href="#como-funciona" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 font-semibold hover:bg-white/10 transition-colors">
+                    Ver como funciona
+                    <i class="fas fa-arrow-down text-sm"></i>
+                </a>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-6 max-w-lg mx-auto mt-16 fade-in-delay-3">
+                <div class="text-center">
+                    <div class="text-3xl font-black gradient-text">100</div>
+                    <div class="text-xs text-gray-500 mt-1">leads/mês</div>
+                </div>
+                <div class="text-center border-x border-white/10">
+                    <div class="text-3xl font-black gradient-text">24/7</div>
+                    <div class="text-xs text-gray-500 mt-1">automatizado</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-3xl font-black gradient-text">R$0,28</div>
+                    <div class="text-xs text-gray-500 mt-1">por lead</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- COMO FUNCIONA -->
+    <section id="como-funciona" class="section-bg py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Como funciona</p>
+                <h2 class="text-4xl md:text-5xl font-black">Em 3 passos simples</h2>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Passo 1 -->
+                <div class="card-bg rounded-2xl p-8 card-glow relative">
+                    <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim">
+                        <i class="fas fa-search text-white text-xl"></i>
+                    </div>
+                    <div class="text-5xl font-black text-white/5 absolute top-6 right-8">01</div>
+                    <h3 class="text-xl font-bold mb-3">Busque leads</h3>
+                    <p class="text-gray-400 leading-relaxed">Digite o nicho e a cidade. O B2BZap busca empresas no Google Maps e extrai nome, telefone e endereço automaticamente.</p>
+                </div>
+
+                <!-- Passo 2 -->
+                <div class="card-bg rounded-2xl p-8 card-glow relative">
+                    <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim" style="animation-delay:0.5s">
+                        <i class="fas fa-database text-white text-xl"></i>
+                    </div>
+                    <div class="text-5xl font-black text-white/5 absolute top-6 right-8">02</div>
+                    <h3 class="text-xl font-bold mb-3">Organize em campanhas</h3>
+                    <p class="text-gray-400 leading-relaxed">Seus leads ficam salvos no banco de dados, organizados por campanha. Filtre, gerencie e acompanhe o status de cada contato.</p>
+                </div>
+
+                <!-- Passo 3 -->
+                <div class="card-bg rounded-2xl p-8 card-glow relative">
+                    <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim" style="animation-delay:1s">
+                        <i class="fab fa-whatsapp text-white text-xl"></i>
+                    </div>
+                    <div class="text-5xl font-black text-white/5 absolute top-6 right-8">03</div>
+                    <h3 class="text-xl font-bold mb-3">Dispare no WhatsApp</h3>
+                    <p class="text-gray-400 leading-relaxed">Com um clique, envie mensagens personalizadas para todos os leads da campanha diretamente pelo WhatsApp.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FUNCIONALIDADES -->
+    <section id="funcionalidades" class="hero-bg py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Funcionalidades</p>
+                <h2 class="text-4xl md:text-5xl font-black">Tudo que você precisa</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card-bg rounded-2xl p-8 card-glow flex gap-5">
+                    <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-map-marker-alt text-green-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">Extração via Google Maps</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Busque qualquer nicho em qualquer cidade do Brasil. Extraia nome, telefone, site e endereço de forma automática.</p>
+                    </div>
+                </div>
+
+                <div class="card-bg rounded-2xl p-8 card-glow flex gap-5">
+                    <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fab fa-whatsapp text-green-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">Disparo automático WhatsApp</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Conecte seu número e dispare mensagens em massa para seus leads de forma simples, rápida e direta.</p>
+                    </div>
+                </div>
+
+                <div class="card-bg rounded-2xl p-8 card-glow flex gap-5">
+                    <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-chart-line text-green-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">Gestão de campanhas</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Crie múltiplas campanhas, acompanhe o status de cada lead e saiba quem já foi contatado.</p>
+                    </div>
+                </div>
+
+                <div class="card-bg rounded-2xl p-8 card-glow flex gap-5">
+                    <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-shield-alt text-green-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">Banco de leads próprio</h3>
+                        <p class="text-gray-400 text-sm leading-relaxed">Todos os leads ficam salvos na sua conta. Reuse, filtre e exporte quando quiser — sem pagar de novo.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PREÇOS -->
+    <section id="precos" class="section-bg py-24 px-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Preços</p>
+                <h2 class="text-4xl md:text-5xl font-black">Simples e transparente</h2>
+                <p class="text-gray-400 mt-4">Sem surpresas. Cancele quando quiser.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <!-- Plano Grátis -->
+                <div class="card-bg rounded-2xl p-8 border border-white/10">
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold mb-1">Grátis</h3>
+                        <p class="text-gray-500 text-sm">Para experimentar</p>
+                    </div>
+                    <div class="mb-8">
+                        <span class="text-5xl font-black">R$0</span>
+                        <span class="text-gray-500">/mês</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 text-sm text-gray-400">
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> 5 créditos de extração</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> 1 campanha</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Disparo via WhatsApp</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-times text-gray-600 w-4"></i> <span class="line-through">Recarga mensal automática</span></li>
+                    </ul>
+                    <a href="{% url 'accounts:register' %}" class="block text-center py-3 rounded-xl border border-white/20 font-semibold hover:bg-white/5 transition-colors">
+                        Criar conta grátis
+                    </a>
+                </div>
+
+                <!-- Plano Pro -->
+                <div class="rounded-2xl p-8 relative overflow-hidden border border-green-500/30" style="background: linear-gradient(135deg, #0d1f14, #0a1a10);">
+                    <div class="absolute top-4 right-4 px-3 py-1 rounded-full gradient-green text-xs font-bold">POPULAR</div>
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold mb-1">Pro</h3>
+                        <p class="text-green-400/70 text-sm">Para quem prospecta de verdade</p>
+                    </div>
+                    <div class="mb-8">
+                        <span class="text-5xl font-black">R$27</span><span class="text-2xl font-black">,90</span>
+                        <span class="text-gray-400">/mês</span>
+                    </div>
+                    <ul class="space-y-3 mb-8 text-sm text-gray-300">
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> <strong>100 créditos</strong> de extração/mês</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Campanhas ilimitadas</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Disparo via WhatsApp</li>
+                        <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Recarga automática todo mês</li>
+                    </ul>
+                    <a href="{% url 'accounts:register' %}" class="block text-center py-3 rounded-xl gradient-green font-bold hover:opacity-90 transition-opacity">
+                        Assinar agora
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section class="hero-bg py-24 px-6">
+        <div class="max-w-2xl mx-auto text-center">
+            <div class="w-16 h-16 rounded-2xl gradient-green flex items-center justify-center mx-auto mb-8 float-anim">
+                <i class="fab fa-whatsapp text-white text-3xl"></i>
+            </div>
+            <h2 class="text-4xl md:text-5xl font-black mb-6">Pronto para prospectar?</h2>
+            <p class="text-gray-400 text-lg mb-10">Crie sua conta agora e comece a gerar leads em minutos.</p>
+            <a href="{% url 'accounts:register' %}" class="inline-flex items-center gap-3 px-10 py-5 rounded-xl gradient-green font-bold text-xl hover:opacity-90 transition-all hover:scale-105">
+                <i class="fab fa-whatsapp"></i>
+                Começar agora — R$ 27,90/mês
+            </a>
+            <p class="text-gray-600 text-sm mt-4">Cancele quando quiser. Sem fidelidade.</p>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="section-bg border-t border-white/5 py-10 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded gradient-green flex items-center justify-center">
+                    <i class="fab fa-whatsapp text-white text-xs"></i>
+                </div>
+                <span class="font-semibold text-gray-400">B2BZap</span>
+            </div>
+            <p>© 2026 B2BZap. Todos os direitos reservados.</p>
+            <div class="flex gap-6">
+                <a href="{% url 'accounts:login' %}" class="hover:text-gray-400 transition-colors">Entrar</a>
+                <a href="{% url 'accounts:register' %}" class="hover:text-gray-400 transition-colors">Cadastrar</a>
+            </div>
+        </div>
+    </footer>
+
 </body>
 </html>

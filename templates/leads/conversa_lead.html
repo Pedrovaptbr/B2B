@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}Conversa — {{ lead.nome }}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col h-full max-w-2xl mx-auto" style="height: calc(100vh - 120px);">
+
+    <!-- Cabeçalho da conversa -->
+    <div class="bg-white rounded-t-lg shadow-md p-4 flex items-center space-x-3 border-b flex-shrink-0">
+        <button onclick="history.back()" class="text-gray-500 hover:text-gray-700 mr-1">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+            {{ lead.nome|first|upper }}
+        </div>
+        <div class="flex-1 min-w-0">
+            <p class="font-bold text-gray-800 truncate">{{ lead.nome }}</p>
+            <p class="text-xs text-gray-500">{{ lead.whatsapp }}</p>
+        </div>
+        <span class="px-2 py-1 text-xs font-semibold rounded-full
+            {% if lead.status == 'Verificado' %} bg-green-200 text-green-800
+            {% elif lead.status == 'Contatado' %} bg-yellow-200 text-yellow-800
+            {% elif lead.status == 'Respondido' %} bg-green-500 text-white
+            {% else %} bg-gray-200 text-gray-800
+            {% endif %}">
+            {{ lead.get_status_display }}
+        </span>
+    </div>
+
+    <!-- Área de mensagens -->
+    <div id="messages-container"
+         class="flex-1 overflow-y-auto bg-gray-100 p-4 space-y-2"
+         style="background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScyMCcgaGVpZ2h0PScyMCc+PHJlY3Qgd2lkdGg9JzIwJyBoZWlnaHQ9JzIwJyBmaWxsPScjZTVlN2ViJy8+PC9zdmc+');">
+
+        {% if not mensagens %}
+            <div class="flex flex-col items-center justify-center h-full text-center py-16">
+                <i class="fab fa-whatsapp text-5xl text-gray-300 mb-3"></i>
+                <p class="text-gray-400 text-sm">Nenhuma mensagem encontrada nesta conversa.</p>
+                <p class="text-gray-300 text-xs mt-1">Envie a primeira mensagem abaixo.</p>
+            </div>
+        {% else %}
+            {% for msg in mensagens %}
+            <div class="flex {% if msg.from_me %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-xs lg:max-w-md px-3 py-2 rounded-lg shadow-sm relative
+                    {% if msg.from_me %}
+                        bg-green-500 text-white rounded-br-none
+                    {% else %}
+                        bg-white text-gray-800 rounded-bl-none
+                    {% endif %}">
+                    <p class="text-sm whitespace-pre-wrap break-words">{{ msg.text }}</p>
+                    <p class="text-right mt-1 text-xs
+                        {% if msg.from_me %}text-green-100{% else %}text-gray-400{% endif %}">
+                        {{ msg.datetime }}
+                        {% if msg.from_me %}
+                            <i class="fas fa-check-double ml-1"></i>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        <!-- Âncora para scroll automático -->
+        <div id="scroll-anchor"></div>
+    </div>
+
+    <!-- Campo de resposta -->
+    <div class="bg-white rounded-b-lg shadow-md p-3 border-t flex-shrink-0">
+        <div id="send-error" class="hidden mb-2 p-2 bg-red-100 text-red-700 text-sm rounded-md"></div>
+        <div class="flex items-end space-x-2">
+            <textarea
+                id="message-input"
+                rows="1"
+                placeholder="Digite uma mensagem..."
+                class="flex-1 resize-none border border-gray-300 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
+                style="max-height: 120px; overflow-y: auto;"
+            ></textarea>
+            <button
+                id="send-btn"
+                class="flex-shrink-0 w-10 h-10 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                title="Enviar mensagem"
+            >
+                <i id="send-icon" class="fas fa-paper-plane text-sm"></i>
+                <i id="send-spinner" class="fas fa-spinner fa-spin text-sm hidden"></i>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const csrfToken = '{{ csrf_token }}';
+    const sendUrl   = "{% url 'leads:api_responder_lead' lead_id=lead.id %}";
+
+    const container   = document.getElementById('messages-container');
+    const input       = document.getElementById('message-input');
+    const sendBtn     = document.getElementById('send-btn');
+    const sendIcon    = document.getElementById('send-icon');
+    const sendSpinner = document.getElementById('send-spinner');
+    const errorBox    = document.getElementById('send-error');
+    const anchor      = document.getElementById('scroll-anchor');
+
+    // ── Scroll automático ────────────────────────────────────────────────────
+    function scrollToBottom() { anchor.scrollIntoView({ behavior: 'smooth' }); }
+    scrollToBottom();
+
+    // ── Auto-resize ──────────────────────────────────────────────────────────
+    input.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // ── Enter para enviar ────────────────────────────────────────────────────
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarMensagem(); }
+    });
+
+    sendBtn.addEventListener('click', enviarMensagem);
+
+    // ── Balão otimista ───────────────────────────────────────────────────────
+    function adicionarBalaoBubble(texto) {
+        const hora = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex justify-end';
+        wrapper.innerHTML = `
+            <div class="max-w-xs lg:max-w-md px-3 py-2 rounded-lg shadow-sm bg-green-500 text-white rounded-br-none opacity-80">
+                <p class="text-sm whitespace-pre-wrap break-words">${escHtml(texto)}</p>
+                <p class="text-right mt-1 text-xs text-green-100">${hora} <i class="fas fa-clock ml-1"></i></p>
+            </div>`;
+        container.insertBefore(wrapper, anchor);
+        scrollToBottom();
+        return wrapper;
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Envio ────────────────────────────────────────────────────────────────
+    async function enviarMensagem() {
+        const texto = input.value.trim();
+        if (!texto) return;
+
+        sendBtn.disabled = true;
+        sendIcon.classList.add('hidden');
+        sendSpinner.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+
+        const balaoPendente = adicionarBalaoBubble(texto);
+        input.value = '';
+        input.style.height = 'auto';
+
+        try {
+            const response = await fetch(sendUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ texto }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                balaoPendente.querySelector('div').classList.remove('opacity-80');
+                balaoPendente.querySelector('div').innerHTML =
+                    balaoPendente.querySelector('div').innerHTML.replace('fa-clock', 'fa-check-double');
+            } else {
+                balaoPendente.remove();
+                mostrarErro(data.error || 'Erro ao enviar a mensagem.');
+            }
+        } catch (err) {
+            balaoPendente.remove();
+            mostrarErro('Falha de conexão. Tente novamente.');
+        } finally {
+            sendBtn.disabled = false;
+            sendIcon.classList.remove('hidden');
+            sendSpinner.classList.add('hidden');
+        }
+    }
+
+    function mostrarErro(msg) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+        setTimeout(() => errorBox.classList.add('hidden'), 5000);
+    }
+})();
+</script>
+{% endblock %}

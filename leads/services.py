@@ -4,9 +4,10 @@ import time
 import uuid
 import logging
 
-# Configura o logger para exibir mensagens de debug
-logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
+# Ativa DEBUG só neste módulo — não polui o logger raiz do Django
+if settings.DEBUG:
+    log.setLevel(logging.DEBUG)
 
 # --- Funções da Evolution API ---
 
@@ -23,12 +24,27 @@ def _evolution_request(method, endpoint, headers, **kwargs):
     try:
         api_url, _ = _get_evolution_api_config()
         response = requests.request(method, f"{api_url}{endpoint}", headers=headers, timeout=15, **kwargs)
+
         if response.status_code == 404:
             return {"success": False, "error": "NOT_FOUND"}
+
         if response.status_code in [401, 403]:
             return {"success": False, "error": f"AUTH_ERROR: {response.status_code} - {response.text}"}
+
+        # 400: captura o corpo para expor o motivo real (ex: número não existe no WhatsApp)
+        if response.status_code == 400:
+            try:
+                body = response.json()
+                # Evolution API v1.6+ retorna {"message": "...", "error": "..."}
+                motivo = body.get("message") or body.get("error") or response.text
+            except Exception:
+                motivo = response.text
+            log.warning(f"Evolution API 400 em {endpoint}: {motivo}")
+            return {"success": False, "error": motivo, "status_code": 400}
+
         response.raise_for_status()
         return {"success": True, "data": response.json() if response.content else {}}
+
     except requests.exceptions.RequestException as e:
         log.error(f"Erro de conexão com a Evolution API: {e}")
         return {"success": False, "error": str(e)}
@@ -68,6 +84,25 @@ def get_instance_connection_state(instance_name):
 
     api_data = result.get("data", {})
     return api_data.get("instance", {}).get("state", "DISCONNECTED")
+
+def get_instance_qrcode(instance_name):
+    """Busca o QR code de uma instância existente na Evolution API."""
+    try:
+        _, global_api_key = _get_evolution_api_config()
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+    headers = {"apikey": global_api_key}
+    result = _evolution_request("get", f"/instance/connect/{instance_name}", headers)
+
+    if not result.get("success"):
+        return {"success": False, "error": result.get("error", "API_ERROR")}
+
+    data = result.get("data", {})
+    qr_code_full = data.get("base64")
+    qr_code_clean = qr_code_full.split("base64,")[-1] if qr_code_full and "base64," in qr_code_full else qr_code_full
+    return {"success": bool(qr_code_clean), "qr_code": qr_code_clean}
+
 
 def send_whatsapp_message(instance_name, instance_token, number, text):
     """Envia uma mensagem de texto via WhatsApp usando o TOKEN DA INSTÂNCIA."""
@@ -125,6 +160,175 @@ def verify_whatsapp_numbers(instance_name: str, numbers: list[str]):
     log.debug(f"Resultado final da verificação: {results}")
     log.debug("--- FIM DA VERIFICAÇÃO DE NÚMEROS ---")
     return results
+
+def fetch_whatsapp_chats(instance_name, limit=30):
+    """
+    Busca a lista de conversas recentes da instância via Evolution API.
+    Retorna lista de dicts: [{jid, name, last_message, timestamp, unread}]
+    """
+    try:
+        _, global_api_key = _get_evolution_api_config()
+    except ValueError as e:
+        log.error(f"Erro ao obter config da API: {e}")
+        return []
+
+    headers = {"apikey": global_api_key, "Content-Type": "application/json"}
+    payload = {"where": {}, "limit": limit}
+
+    result = _evolution_request(
+        "post",
+        f"/chat/findChats/{instance_name}",
+        headers,
+        json=payload
+    )
+
+    if not result.get("success"):
+        log.error(f"Erro ao buscar chats: {result.get('error')}")
+        return []
+
+    raw = result.get("data", [])
+
+    # Normaliza: pode ser lista direta ou dict com records
+    if isinstance(raw, list):
+        records = raw
+    elif isinstance(raw, dict):
+        records = raw.get("records", raw.get("chats", []))
+    else:
+        records = []
+
+    chats = []
+    for chat in records:
+        # JID pode estar em "id" (string) ou "id.remote" (dict)
+        jid = ""
+        id_field = chat.get("id", "")
+        if isinstance(id_field, dict):
+            jid = id_field.get("remote", id_field.get("_serialized", ""))
+        else:
+            jid = str(id_field)
+
+        # Ignora grupos e broadcasts
+        if "@g.us" in jid or "@broadcast" in jid or not jid:
+            continue
+
+        name = chat.get("name") or chat.get("pushName") or jid.split("@")[0]
+        timestamp = chat.get("timestamp") or chat.get("lastMessageTime", 0)
+
+        last_msg_raw = chat.get("lastMessage", {})
+        if isinstance(last_msg_raw, dict):
+            msg_body = last_msg_raw.get("message", {})
+            last_text = (
+                msg_body.get("conversation")
+                or msg_body.get("extendedTextMessage", {}).get("text")
+                or "📎 Mídia"
+            )
+        else:
+            last_text = ""
+
+        unread = chat.get("unreadCount", 0)
+
+        chats.append({
+            "jid": jid,
+            "name": name,
+            "last_message": last_text,
+            "timestamp": int(timestamp) if timestamp else 0,
+            "unread": int(unread) if unread else 0,
+        })
+
+    # Ordena por mais recente
+    chats.sort(key=lambda c: c["timestamp"], reverse=True)
+    return chats
+
+
+def fetch_whatsapp_messages(instance_name, whatsapp_number, limit=50):
+    """
+    Busca o histórico de mensagens de uma conversa WhatsApp via Evolution API v1.6.x.
+    Retorna lista de dicts: [{from_me, text, timestamp}, ...]
+    """
+    try:
+        _, global_api_key = _get_evolution_api_config()
+    except ValueError as e:
+        log.error(f"Erro ao obter config da API: {e}")
+        return []
+
+    numero_limpo = ''.join(filter(str.isdigit, whatsapp_number))
+    jid = f"{numero_limpo}@s.whatsapp.net"
+
+    headers = {"apikey": global_api_key, "Content-Type": "application/json"}
+
+    # Evolution API v1.6.x usa remoteJid direto no where (não aninhado em key)
+    payload = {
+        "where": {
+            "remoteJid": jid
+        },
+        "limit": limit
+    }
+
+    log.debug(f"fetch_whatsapp_messages → instância={instance_name} jid={jid} payload={payload}")
+
+    result = _evolution_request(
+        "post",
+        f"/chat/findMessages/{instance_name}",
+        headers,
+        json=payload
+    )
+
+    log.debug(f"fetch_whatsapp_messages ← success={result.get('success')} data_type={type(result.get('data')).__name__}")
+
+    if not result.get("success"):
+        log.error(f"Erro ao buscar mensagens: {result.get('error')}")
+        return []
+
+    raw = result.get("data", {})
+    log.debug(f"fetch_whatsapp_messages raw keys={list(raw.keys()) if isinstance(raw, dict) else type(raw).__name__}")
+
+    # Normaliza todos os formatos de resposta possíveis da API
+    if isinstance(raw, list):
+        records = raw
+    elif isinstance(raw, dict):
+        if "messages" in raw:
+            inner = raw["messages"]
+            records = inner.get("records", []) if isinstance(inner, dict) else (inner if isinstance(inner, list) else [])
+        elif "records" in raw:
+            records = raw["records"]
+        else:
+            # Último recurso: pega o primeiro campo que for lista
+            records = next((v for v in raw.values() if isinstance(v, list)), [])
+    else:
+        records = []
+
+    log.debug(f"fetch_whatsapp_messages → {len(records)} registros brutos encontrados")
+
+    mensagens = []
+    for msg in records:
+        key = msg.get("key", {})
+        from_me = bool(key.get("fromMe", False))
+
+        message_body = msg.get("message", {}) or {}
+        text = (
+            message_body.get("conversation")
+            or (message_body.get("extendedTextMessage") or {}).get("text")
+            or (message_body.get("imageMessage") or {}).get("caption")
+            or "[Mídia]"
+        )
+
+        timestamp = msg.get("messageTimestamp", 0)
+
+        # Filtro: só mensagens deste JID (inclui @lid como fallback)
+        remote_jid = key.get("remoteJid", "")
+        if numero_limpo not in remote_jid and jid not in remote_jid:
+            log.debug(f"Mensagem ignorada: remoteJid={remote_jid} não bate com {numero_limpo}")
+            continue
+
+        mensagens.append({
+            "from_me": from_me,
+            "text": text,
+            "timestamp": int(timestamp),
+        })
+
+    # Ordena cronologicamente (mais antigas primeiro)
+    mensagens.sort(key=lambda m: m["timestamp"])
+    return mensagens
+
 
 # --- Funções da Google Places API ---
 def get_google_text_search(query):

@@ -6,3 +6,4 @@ djangorestframework==3.14.0
 django-cors-headers==4.3.1
 psycopg2-binary
 whitenoise==6.6.0
+stripe==10.4.0
