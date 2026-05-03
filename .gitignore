@@ -38,3 +38,7 @@ cloudflared.exe
 
 # Estáticos coletados (gerados no build)
 staticfiles/
+
+# Artefatos gerados localmente
+*.zip
+b2bzap-landing.zip
