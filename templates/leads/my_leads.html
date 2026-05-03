@@ -61,7 +61,7 @@
     </div>
 {% empty %}
     <div class="lead-card">
-        <p>Você ainda não extraiu nenhum lead. Comece fazendo uma <a href="{% url 'leads:search' %}">nova busca</a>.</p>
+        <p>Você ainda não extraiu nenhum lead. Comece fazendo uma <a href="{% url 'leads:campaign_list' %}">nova busca</a>.</p>
     </div>
 {% endfor %}
 {% endblock %}

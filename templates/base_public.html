@@ -3,29 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}B2BZAP{% endblock %}</title>
+    <title>{% block title %}B2BZap{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        .gradient-green { background: linear-gradient(135deg, #25D366, #128C7E); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
+    </style>
 </head>
-<body class="bg-gray-100">
-    <div class="min-h-screen flex flex-col items-center justify-center p-4">
-        <a href="{% url 'landing_page' %}" class="text-4xl font-bold text-blue-600 mb-8">
-            B2BZAP
-        </a>
+<body style="background:#0a0a0a; min-height:100vh;" class="text-white flex flex-col items-center justify-center p-4">
 
-        <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-            {% if messages %}
-                <div class="mb-4 space-y-2">
-                {% for message in messages %}
-                    <div class="p-4 rounded-md {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-                </div>
-            {% endif %}
-
-            {% block content %}{% endblock %}
+    <a href="{% url 'landing_page' %}" class="flex items-center gap-2 mb-8">
+        <div class="w-9 h-9 rounded-xl gradient-green flex items-center justify-center">
+            <i class="fab fa-whatsapp text-white text-lg"></i>
         </div>
+        <span class="text-2xl font-black tracking-tight">B2BZap</span>
+    </a>
+
+    <div class="w-full max-w-md rounded-2xl border border-white/8 p-8" style="background:#111;">
+
+        {% if messages %}
+        <div class="mb-5 space-y-2">
+            {% for message in messages %}
+            <div class="px-4 py-3 rounded-lg text-sm font-medium
+                {% if message.tags == 'success' %}bg-green-500/10 border border-green-500/20 text-green-400
+                {% elif message.tags == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400
+                {% else %}bg-blue-500/10 border border-blue-500/20 text-blue-400{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
     </div>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

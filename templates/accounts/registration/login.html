@@ -1,37 +1,43 @@
 {% extends 'base_public.html' %}
-{% block title %}Login - B2BZAP{% endblock %}
+{% block title %}Entrar — B2BZap{% endblock %}
 
 {% block content %}
-<h2 class="text-2xl font-bold text-center mb-6">Login</h2>
+<h2 class="text-2xl font-bold text-center mb-6">Entrar</h2>
 
 {% if form.errors %}
-    <div class="bg-red-50 border-l-4 border-red-400 text-red-700 p-4 mb-6" role="alert">
-        <p>Seu nome de usuário e senha não correspondem. Por favor, tente novamente.</p>
-    </div>
+<div class="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl p-4 mb-5 text-sm">
+    Usuário ou senha incorretos. Tente novamente.
+</div>
 {% endif %}
 
 <form method="post" class="space-y-4">
     {% csrf_token %}
     <div>
-        <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-gray-700">Nome de usuário</label>
-        <input type="text" name="username" id="{{ form.username.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+        <label for="{{ form.username.id_for_label }}" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Usuário</label>
+        <input type="text" name="username" id="{{ form.username.id_for_label }}" autocomplete="username"
+               class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors">
     </div>
     <div>
-        <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-gray-700">Senha</label>
-        <input type="password" name="password" id="{{ form.password.id_for_label }}" class="mt-1 block w-full p-2 border rounded-md shadow-sm">
+        <label for="{{ form.password.id_for_label }}" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Senha</label>
+        <input type="password" name="password" id="{{ form.password.id_for_label }}" autocomplete="current-password"
+               class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors">
     </div>
 
-    <div class="flex items-center justify-between mt-4">
-        <label class="flex items-center">
-            <input type="checkbox" name="remember_me" class="rounded border-gray-300 text-blue-600 shadow-sm">
-            <span class="ml-2 text-sm text-gray-600">Permanecer Conectado</span>
+    <div class="flex items-center justify-between pt-1">
+        <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" name="remember_me" class="w-4 h-4 accent-green-500 rounded">
+            <span class="text-sm text-gray-500">Permanecer conectado</span>
         </label>
     </div>
 
-    <button type="submit" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">Entrar</button>
+    <button type="submit"
+            class="w-full py-3 rounded-xl font-bold text-white hover:opacity-90 transition-opacity mt-2"
+            style="background: linear-gradient(135deg, #25D366, #128C7E);">
+        Entrar
+    </button>
 </form>
 
-<p class="text-center text-sm text-gray-600 mt-4">
-    Não tem uma conta? <a href="{% url 'accounts:register' %}" class="font-medium text-blue-600 hover:underline">Cadastre-se</a>
+<p class="text-center text-sm text-gray-600 mt-5">
+    Não tem conta? <a href="{% url 'accounts:register' %}" class="text-green-400 hover:text-green-300 font-semibold transition-colors">Criar conta grátis</a>
 </p>
 {% endblock %}

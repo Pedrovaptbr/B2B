@@ -2,39 +2,43 @@
 {% block title %}Meu Banco de Leads{% endblock %}
 
 {% block content %}
-<div class="bg-white p-6 rounded-lg shadow-md mb-6">
-    <div class="flex justify-between items-center">
-        <div>
-            <h1 class="text-2xl font-bold">Meu Banco de Leads</h1>
-            <p class="text-gray-600">Todos os leads que você já extraiu estão aqui. Apague leads para liberar espaço.</p>
-        </div>
-        <div class="text-right">
-            <span class="text-lg font-semibold text-gray-700">
-                {{ user.perfil.total_leads_adquiridos }} lead(s) no banco
-            </span>
-        </div>
+
+{# ── Cabeçalho ───────────────────────────────────────────────────────────── #}
+<div class="rounded-xl border border-white/8 p-6 mb-6 flex justify-between items-center" style="background:#111;">
+    <div>
+        <h1 class="text-xl font-bold text-white">Meu Banco de Leads</h1>
+        <p class="text-sm text-gray-500 mt-1">Todos os leads que você extraiu ficam salvos aqui para sempre — sem gastar crédito para acessar.</p>
+    </div>
+    <div class="text-right flex-shrink-0 ml-6">
+        <div class="text-2xl font-black text-white">{{ user.perfil.total_leads_adquiridos }}</div>
+        <div class="text-xs text-gray-500">leads no banco</div>
     </div>
 </div>
 
-<div class="bg-white p-6 rounded-lg shadow-md">
-    <div class="space-y-3">
-        {% for lead in leads %}
-            <div class="flex items-center justify-between p-3 border rounded-md hover:bg-gray-50">
-                <div>
-                    <p class="font-semibold text-gray-800">{{ lead.nome }}</p>
-                    <p class="text-sm text-gray-500">{{ lead.whatsapp|default:"Sem WhatsApp" }}</p>
-                </div>
-                <form method="POST" onsubmit="return confirm('Tem certeza que deseja apagar este lead do seu banco de dados? Esta ação não pode ser desfeita.');">
-                    {% csrf_token %}
-                    <input type="hidden" name="lead_id" value="{{ lead.id }}">
-                    <button type="submit" class="px-3 py-1 text-sm font-semibold text-red-600 bg-red-100 rounded-md hover:bg-red-200" title="Apagar Lead">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
-                </form>
-            </div>
-        {% empty %}
-            <p class="text-center text-gray-500 py-8">Seu banco de leads está vazio.</p>
-        {% endfor %}
+{# ── Lista de leads ───────────────────────────────────────────────────────── #}
+<div class="rounded-xl border border-white/8 overflow-hidden" style="background:#111;">
+    {% for lead in leads %}
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-white/5 last:border-0 hover:bg-white/3 transition-colors">
+        <div>
+            <p class="font-semibold text-sm text-white">{{ lead.nome }}</p>
+            <p class="text-xs text-gray-500 font-mono mt-0.5">{{ lead.whatsapp|default:"Sem WhatsApp" }}</p>
+        </div>
+        <form method="POST" onsubmit="return confirm('Apagar este lead do banco? Esta ação não pode ser desfeita.');">
+            {% csrf_token %}
+            <input type="hidden" name="lead_id" value="{{ lead.id }}">
+            <button type="submit"
+                    class="p-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Apagar Lead">
+                <i class="fas fa-trash-alt text-sm"></i>
+            </button>
+        </form>
     </div>
+    {% empty %}
+    <div class="text-center py-16 text-gray-600">
+        <i class="fas fa-database text-4xl mb-4 text-gray-700"></i>
+        <p class="text-sm">Seu banco de leads está vazio.</p>
+        <p class="text-xs mt-1 text-gray-700">Extraia leads em uma campanha para vê-los aqui.</p>
+    </div>
+    {% endfor %}
 </div>
+
 {% endblock %}

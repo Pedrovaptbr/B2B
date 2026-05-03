@@ -1,57 +1,61 @@
 {% extends 'base.html' %}
-{% block title %}Teste de Envio{% endblock %}
+{% block title %}Testar Envio — B2BZap{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-6">Testar Envio de Mensagem</h2>
+<div class="max-w-xl mx-auto">
 
-    {# Bloco para exibir o resultado do envio #}
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{% url 'accounts:whatsapp_instance' %}" class="text-gray-500 hover:text-gray-300 transition-colors p-1">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <h1 class="text-xl font-bold text-white">Testar Envio de Mensagem</h1>
+    </div>
+
     {% if resultado_envio %}
         {% if resultado_envio.success %}
-            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                <p class="font-bold">Sucesso!</p>
-                <p>A API aceitou a mensagem para o número {{ numero_enviado }}.</p>
-                <pre class="text-xs mt-2 bg-gray-100 p-2 rounded">{{ resultado_envio }}</pre>
-            </div>
+        <div class="rounded-xl bg-green-500/10 border border-green-500/20 p-4 mb-5">
+            <p class="font-semibold text-green-400 mb-1">Sucesso!</p>
+            <p class="text-sm text-gray-400">Mensagem enviada para {{ numero_enviado }}.</p>
+        </div>
         {% else %}
-            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
-                <p class="font-bold">Falha no Envio</p>
-                <p>A API retornou um erro: {{ resultado_envio.error }}</p>
-                <pre class="text-xs mt-2 bg-gray-100 p-2 rounded">{{ resultado_envio }}</pre>
-            </div>
+        <div class="rounded-xl bg-red-500/10 border border-red-500/20 p-4 mb-5">
+            <p class="font-semibold text-red-400 mb-1">Falha no Envio</p>
+            <p class="text-sm text-gray-400">{{ resultado_envio.error }}</p>
+        </div>
         {% endif %}
     {% endif %}
 
-    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6" role="alert">
-        <p class="font-bold">Instruções</p>
-        <p class="text-sm">Use esta página para enviar uma mensagem de teste para qualquer número e verificar se sua instância do WhatsApp está funcionando corretamente.</p>
+    <div class="rounded-xl bg-blue-500/8 border border-blue-500/15 p-4 mb-6">
+        <p class="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Instruções</p>
+        <p class="text-sm text-gray-400">Envie uma mensagem de teste para verificar se sua instância do WhatsApp está funcionando corretamente.</p>
     </div>
 
-    <form method="POST" action="{% url 'accounts:test_send' %}">
-        {% csrf_token %}
-        <div class="mb-4">
-            <label for="numero" class="block text-gray-700 text-sm font-bold mb-2">Número do WhatsApp:</label>
-            <input type="text" name="numero" id="numero" required
-                   class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                   placeholder="Ex: (11) 99999-8888">
-            <p class="text-xs text-gray-500 mt-1">Inclua o DDD. O DDI (55) será adicionado automaticamente.</p>
-        </div>
+    <div class="rounded-2xl border border-white/8 p-6" style="background:#111;">
+        <form method="POST" action="{% url 'accounts:test_send' %}" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="numero" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Número do WhatsApp</label>
+                <input type="text" name="numero" id="numero" required
+                       class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors"
+                       placeholder="Ex: (11) 99999-8888">
+                <p class="text-xs text-gray-600 mt-1">Inclua o DDD. O DDI (55) será adicionado automaticamente.</p>
+            </div>
+            <div>
+                <label for="mensagem" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Mensagem</label>
+                <textarea name="mensagem" id="mensagem" rows="5" required
+                          class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors resize-y"
+                          placeholder="Digite sua mensagem de teste aqui."></textarea>
+            </div>
+            <div class="flex items-center justify-between pt-1">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-white hover:opacity-90 transition-opacity"
+                        style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                    <i class="fas fa-paper-plane"></i>Enviar Teste
+                </button>
+                <a href="{% url 'accounts:whatsapp_instance' %}" class="text-sm text-gray-600 hover:text-gray-400 transition-colors">Voltar</a>
+            </div>
+        </form>
+    </div>
 
-        <div class="mb-6">
-            <label for="mensagem" class="block text-gray-700 text-sm font-bold mb-2">Mensagem:</label>
-            <textarea name="mensagem" id="mensagem" rows="6" required
-                      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                      placeholder="Digite sua mensagem de teste aqui."></textarea>
-        </div>
-
-        <div class="flex items-center justify-between">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                <i class="fas fa-paper-plane mr-2"></i>Enviar Mensagem de Teste
-            </button>
-            <a href="{% url 'accounts:whatsapp_instance' %}" class="inline-block align-baseline font-bold text-sm text-gray-600 hover:text-gray-800">
-                Voltar
-            </a>
-        </div>
-    </form>
 </div>
 {% endblock %}

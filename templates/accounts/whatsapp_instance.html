@@ -2,82 +2,83 @@
 {% block title %}WhatsApp — B2BZap{% endblock %}
 
 {% block content %}
+<div class="max-w-md mx-auto">
 
 {% if instance.status == 'CONNECTED' or instance.status == 'OPEN' %}
-<div class="max-w-md mx-auto">
-    <div class="bg-white p-8 rounded-xl shadow-md text-center">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-            <i class="fab fa-whatsapp text-3xl text-green-500"></i>
-        </div>
-        <h1 class="text-2xl font-bold mb-1">WhatsApp</h1>
-        <p class="text-sm text-gray-500 mb-6">
-            Status: <strong class="text-green-600">● Conectado!</strong>
-        </p>
-        <div class="space-y-2">
-            <a href="{% url 'accounts:test_send' %}"
-               class="block w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-paper-plane mr-2"></i>Testar Envio
-            </a>
-            <form method="POST" action="{% url 'accounts:whatsapp_instance' %}"
-                  onsubmit="return confirm('Isso irá desconectar e resetar sua instância. Continuar?')">
-                {% csrf_token %}
-                <button type="submit"
-                        class="w-full px-4 py-2 font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
-                    <i class="fas fa-power-off mr-2"></i>Resetar Instância
-                </button>
-            </form>
-        </div>
+{# ══════════════════════════ CONECTADO ══════════════════════════════════════ #}
+<div class="rounded-2xl border border-white/8 p-8 text-center" style="background:#111;">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+         style="background: linear-gradient(135deg, #25D366, #128C7E);">
+        <i class="fab fa-whatsapp text-white text-3xl"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-white mb-1">WhatsApp</h1>
+    <p class="text-sm text-gray-500 mb-6">
+        Status: <strong class="text-green-400">● Conectado</strong>
+    </p>
+    <div class="space-y-2">
+        <a href="{% url 'accounts:test_send' %}"
+           class="flex items-center justify-center gap-2 w-full px-4 py-2.5 font-semibold text-white rounded-xl hover:opacity-90 transition-opacity"
+           style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            <i class="fas fa-paper-plane"></i>Testar Envio
+        </a>
+        <form method="POST" action="{% url 'accounts:whatsapp_instance' %}"
+              onsubmit="return confirm('Isso irá desconectar e resetar sua instância. Continuar?')">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full px-4 py-2.5 font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors">
+                <i class="fas fa-power-off mr-2"></i>Resetar Instância
+            </button>
+        </form>
     </div>
 </div>
 
 {% else %}
-{# ══════════════════════════════ DESCONECTADO ══════════════════════════════ #}
-<div class="max-w-md mx-auto">
-    <div class="bg-white p-8 rounded-xl shadow-md text-center">
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-            <i class="fab fa-whatsapp text-3xl text-gray-400"></i>
-        </div>
-        <h1 class="text-2xl font-bold mb-1">Conexão WhatsApp</h1>
-        <p class="text-sm text-gray-500 mb-4">
-            Status:
-            <strong class="font-semibold
-                {% if instance.status == 'CONNECTING' %}text-yellow-600
-                {% else %}text-red-600{% endif %}">
-                {% if instance.status == 'CONNECTING' or instance.qr_code_base64 %}Aguardando conexão
-                {% else %}Desconectado{% endif %}
-            </strong>
-        </p>
+{# ══════════════════════ DESCONECTADO ══════════════════════════════════════ #}
+<div class="rounded-2xl border border-white/8 p-8 text-center" style="background:#111;">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+        <i class="fab fa-whatsapp text-gray-500 text-3xl"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-white mb-1">Conexão WhatsApp</h1>
+    <p class="text-sm text-gray-500 mb-5">
+        Status:
+        <strong class="font-semibold
+            {% if instance.status == 'CONNECTING' %}text-yellow-400
+            {% else %}text-red-400{% endif %}">
+            {% if instance.status == 'CONNECTING' or instance.qr_code_base64 %}⏳ Aguardando conexão
+            {% else %}● Desconectado{% endif %}
+        </strong>
+    </p>
 
+    {% if instance.qr_code_base64 %}
+    <div class="mb-6">
+        <p class="text-sm text-gray-500 mb-4">Escaneie o QR Code com seu WhatsApp</p>
+        <div class="inline-block p-3 rounded-2xl bg-white">
+            <img src="data:image/png;base64,{{ instance.qr_code_base64 }}" alt="QR Code" class="w-48 h-48">
+        </div>
+        <p class="text-xs text-gray-600 mt-3">A página recarrega automaticamente ao conectar.</p>
+    </div>
+    {% else %}
+    <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-left">
+        <p class="text-sm text-red-400">Sua instância está desconectada. Clique em <strong>"Resetar Instância"</strong> para gerar um novo QR Code.</p>
+    </div>
+    {% endif %}
+
+    <div class="space-y-2">
         {% if instance.qr_code_base64 %}
-            <div class="mb-6">
-                <p class="text-sm text-gray-500 mb-3">Escaneie o QR Code com seu WhatsApp</p>
-                <img class="mx-auto border-4 border-gray-100 rounded-xl shadow"
-                     src="data:image/png;base64,{{ instance.qr_code_base64 }}"
-                     alt="QR Code">
-                <p class="text-xs text-gray-400 mt-2">A página recarrega automaticamente ao conectar.</p>
-            </div>
-        {% else %}
-            <div class="mb-6 p-4 bg-red-50 rounded-lg text-left">
-                <p class="text-sm text-red-700">Sua instância está desconectada. Clique em <strong>"Resetar Instância"</strong> para gerar um novo QR Code e reconectar.</p>
-            </div>
+        <a href="{% url 'accounts:test_send' %}"
+           class="flex items-center justify-center gap-2 w-full px-4 py-2.5 font-semibold text-white rounded-xl hover:opacity-90 transition-opacity"
+           style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            <i class="fas fa-paper-plane"></i>Testar Envio
+        </a>
         {% endif %}
-
-        <div class="space-y-2">
-            {% if instance.qr_code_base64 %}
-            <a href="{% url 'accounts:test_send' %}"
-               class="block w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-paper-plane mr-2"></i>Testar Envio
-            </a>
-            {% endif %}
-            <form method="POST" action="{% url 'accounts:whatsapp_instance' %}"
-                  onsubmit="return confirm('Isso irá desconectar e resetar sua instância. Continuar?')">
-                {% csrf_token %}
-                <button type="submit"
-                        class="w-full px-4 py-2 font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors">
-                    <i class="fas fa-power-off mr-2"></i>Resetar Instância
-                </button>
-            </form>
-        </div>
+        <form method="POST" action="{% url 'accounts:whatsapp_instance' %}"
+              onsubmit="return confirm('Isso irá desconectar e resetar sua instância. Continuar?')">
+            {% csrf_token %}
+            <button type="submit"
+                    class="w-full px-4 py-2.5 font-semibold text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl hover:bg-red-500/20 transition-colors">
+                <i class="fas fa-power-off mr-2"></i>Resetar Instância
+            </button>
+        </form>
     </div>
 </div>
 
@@ -102,5 +103,5 @@
 {% endif %}
 
 {% endif %}
-
+</div>
 {% endblock %}
