@@ -88,5 +88,106 @@
         </div>
     </div>
 
+    {# ── Créditos Avulsos ── #}
+    <div class="mt-10">
+        <div class="mb-5">
+            <h2 class="text-xl font-bold text-white">Comprar créditos avulsos</h2>
+            <p class="text-sm text-gray-500 mt-1">
+                Sem compromisso mensal. Os créditos somam ao seu saldo e não expiram.
+                {% if request.user.perfil.plano_ativo %}
+                <span class="ml-2 px-2 py-0.5 text-xs font-bold rounded-full bg-green-500/15 text-green-400 border border-green-500/20">
+                    <i class="fas fa-tag mr-1"></i>Desconto Pro aplicado
+                </span>
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {# ── Pack 20 ── #}
+            <div class="rounded-2xl border border-white/8 p-5 flex flex-col hover:border-white/15 transition-colors" style="background:#111;">
+                <div class="mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                        <i class="fas fa-coins text-yellow-400"></i>
+                    </div>
+                    <p class="text-lg font-black text-white">20 créditos</p>
+                    <p class="text-xs text-gray-600 mt-0.5">= 20 extrações de leads</p>
+                </div>
+                <div class="mb-4 flex-1">
+                    {% if request.user.perfil.plano_ativo %}
+                    <p class="text-2xl font-black text-white">R$7,90</p>
+                    <p class="text-xs text-gray-600 line-through">R$9,90</p>
+                    {% else %}
+                    <p class="text-2xl font-black text-white">R$9,90</p>
+                    <p class="text-xs text-gray-600">R$0,495 por crédito</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'accounts:credits_checkout' %}?pack=20"
+                   class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
+                   style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                    Comprar
+                </a>
+            </div>
+
+            {# ── Pack 50 ── #}
+            <div class="rounded-2xl border border-green-500/25 p-5 flex flex-col relative overflow-hidden" style="background: linear-gradient(135deg, #0d1f14, #0a1a10);">
+                <div class="absolute top-3 right-3 px-2 py-0.5 text-xs font-bold rounded-full"
+                     style="background: linear-gradient(135deg, #25D366, #128C7E);">POPULAR</div>
+                <div class="mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/20 flex items-center justify-center mb-3">
+                        <i class="fas fa-coins text-green-400"></i>
+                    </div>
+                    <p class="text-lg font-black text-white">50 créditos</p>
+                    <p class="text-xs text-green-400/60 mt-0.5">= 50 extrações de leads</p>
+                </div>
+                <div class="mb-4 flex-1">
+                    {% if request.user.perfil.plano_ativo %}
+                    <p class="text-2xl font-black text-white">R$18,90</p>
+                    <p class="text-xs text-gray-600 line-through">R$22,90</p>
+                    {% else %}
+                    <p class="text-2xl font-black text-white">R$22,90</p>
+                    <p class="text-xs text-gray-600">R$0,458 por crédito</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'accounts:credits_checkout' %}?pack=50"
+                   class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
+                   style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                    Comprar
+                </a>
+            </div>
+
+            {# ── Pack 100 ── #}
+            <div class="rounded-2xl border border-white/8 p-5 flex flex-col hover:border-white/15 transition-colors" style="background:#111;">
+                <div class="mb-4">
+                    <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                        <i class="fas fa-coins text-orange-400"></i>
+                    </div>
+                    <p class="text-lg font-black text-white">100 créditos</p>
+                    <p class="text-xs text-gray-600 mt-0.5">= 100 extrações de leads</p>
+                </div>
+                <div class="mb-4 flex-1">
+                    {% if request.user.perfil.plano_ativo %}
+                    <p class="text-2xl font-black text-white">R$33,90</p>
+                    <p class="text-xs text-gray-600 line-through">R$39,90</p>
+                    {% else %}
+                    <p class="text-2xl font-black text-white">R$39,90</p>
+                    <p class="text-xs text-gray-600">R$0,399 por crédito</p>
+                    {% endif %}
+                </div>
+                <a href="{% url 'accounts:credits_checkout' %}?pack=100"
+                   class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity"
+                   style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                    Comprar
+                </a>
+            </div>
+
+        </div>
+        {% if not request.user.perfil.plano_ativo %}
+        <p class="text-xs text-gray-600 mt-3 text-center">
+            <i class="fas fa-tag mr-1"></i>Assine o Pro e ganhe desconto em todos os pacotes.
+        </p>
+        {% endif %}
+    </div>
+
 </div>
 {% endblock %}

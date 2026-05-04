@@ -20,6 +20,17 @@ STRIPE_PUBLIC_KEY  = os.getenv('STRIPE_PUBLIC_KEY', '')   # pk_live_... ou pk_te
 STRIPE_SECRET_KEY  = os.getenv('STRIPE_SECRET_KEY', '')   # sk_live_... ou sk_test_...
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', '')  # whsec_...
 STRIPE_PRICE_ID    = os.getenv('STRIPE_PRICE_ID', '')     # price_... (plano mensal no dashboard)
+
+# Créditos avulsos — preços normais
+STRIPE_CREDITS_20_PRICE_ID  = os.getenv('STRIPE_CREDITS_20_PRICE_ID', '')   # R$9,90
+STRIPE_CREDITS_50_PRICE_ID  = os.getenv('STRIPE_CREDITS_50_PRICE_ID', '')   # R$22,90
+STRIPE_CREDITS_100_PRICE_ID = os.getenv('STRIPE_CREDITS_100_PRICE_ID', '')  # R$39,90
+
+# Créditos avulsos — preços Pro (com desconto)
+STRIPE_CREDITS_20_PRO_PRICE_ID  = os.getenv('STRIPE_CREDITS_20_PRO_PRICE_ID', '')   # R$7,90
+STRIPE_CREDITS_50_PRO_PRICE_ID  = os.getenv('STRIPE_CREDITS_50_PRO_PRICE_ID', '')   # R$18,90
+STRIPE_CREDITS_100_PRO_PRICE_ID = os.getenv('STRIPE_CREDITS_100_PRO_PRICE_ID', '')  # R$33,90
+
 # URL base do seu site — usada para montar success_url e cancel_url no Checkout
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
 

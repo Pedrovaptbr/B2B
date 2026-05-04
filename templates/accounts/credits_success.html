@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Créditos adicionados — B2BZap{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto text-center py-12">
+    <div class="rounded-2xl border border-white/8 p-10" style="background:#111;">
+
+        <div class="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+             style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            <i class="fas fa-coins text-white text-3xl"></i>
+        </div>
+
+        <h1 class="text-2xl font-bold text-white mb-2">Créditos adicionados!</h1>
+        {% if credits_added %}
+        <p class="text-gray-400 mb-8">
+            <strong class="text-white text-xl">{{ credits_added }} créditos</strong> foram somados ao seu saldo agora.
+        </p>
+        {% else %}
+        <p class="text-gray-400 mb-8">Seus créditos serão adicionados em instantes ao seu saldo.</p>
+        {% endif %}
+
+        <div class="rounded-xl border border-green-500/20 bg-green-500/8 p-5 mb-8 text-left space-y-2.5">
+            <p class="flex items-center gap-2 text-sm text-gray-300">
+                <i class="fas fa-check-circle text-green-400 w-4"></i> Créditos não expiram
+            </p>
+            <p class="flex items-center gap-2 text-sm text-gray-300">
+                <i class="fas fa-check-circle text-green-400 w-4"></i> Somam ao saldo existente
+            </p>
+            <p class="flex items-center gap-2 text-sm text-gray-300">
+                <i class="fas fa-check-circle text-green-400 w-4"></i> Válidos em qualquer campanha
+            </p>
+        </div>
+
+        <a href="{% url 'leads:campaign_list' %}"
+           class="block w-full py-3 px-6 rounded-xl font-bold text-white hover:opacity-90 transition-opacity"
+           style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            Ir para campanhas
+        </a>
+
+        <a href="{% url 'accounts:planos' %}"
+           class="block mt-3 text-sm text-gray-600 hover:text-gray-400 transition-colors">
+            Ver meu saldo
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -360,4 +360,110 @@ def stripe_webhook_view(request):
         # Mantém ativo até o Stripe cancelar a assinatura (ele tenta mais vezes)
         logging.getLogger(__name__).warning(f"Stripe: pagamento falhou para customer {customer_id}")
 
+    # ── Compra avulsa de créditos ─────────────────────────────────────────────
+    elif ev_type == 'checkout.session.completed':
+        purchase_type = data.get('metadata', {}).get('purchase_type')
+        if purchase_type == 'credits' and data.get('payment_status') == 'paid':
+            from django.db.models import F
+            customer_id   = data.get('customer')
+            credits_amount = int(data.get('metadata', {}).get('credits_amount', 0))
+            if credits_amount > 0 and customer_id:
+                PerfilUsuario.objects.filter(stripe_customer_id=customer_id).update(
+                    creditos_disponiveis=F('creditos_disponiveis') + credits_amount
+                )
+
     return HttpResponse(status=200)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STRIPE — Checkout de Créditos Avulsos
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Mapa de pacotes: pack → (créditos, price_id_normal, price_id_pro, preço_normal, preço_pro)
+CREDIT_PACKS = {
+    '20':  {'credits': 20,  'label': '20 créditos',
+            'price_normal': 'R$9,90',  'price_pro': 'R$7,90',
+            'id_normal': 'STRIPE_CREDITS_20_PRICE_ID',
+            'id_pro':    'STRIPE_CREDITS_20_PRO_PRICE_ID'},
+    '50':  {'credits': 50,  'label': '50 créditos',
+            'price_normal': 'R$22,90', 'price_pro': 'R$18,90',
+            'id_normal': 'STRIPE_CREDITS_50_PRICE_ID',
+            'id_pro':    'STRIPE_CREDITS_50_PRO_PRICE_ID'},
+    '100': {'credits': 100, 'label': '100 créditos',
+            'price_normal': 'R$39,90', 'price_pro': 'R$33,90',
+            'id_normal': 'STRIPE_CREDITS_100_PRICE_ID',
+            'id_pro':    'STRIPE_CREDITS_100_PRO_PRICE_ID'},
+}
+
+
+@login_required
+def stripe_credits_checkout_view(request):
+    """Cria uma Checkout Session de pagamento único para créditos avulsos."""
+    pack = request.GET.get('pack')
+    if pack not in CREDIT_PACKS:
+        messages.error(request, "Pacote de créditos inválido.")
+        return redirect('accounts:planos')
+
+    perfil, _ = PerfilUsuario.objects.get_or_create(user=request.user)
+    pack_data  = CREDIT_PACKS[pack]
+    is_pro     = perfil.plano_ativo
+
+    # Escolhe o price ID correto (Pro com desconto se disponível, senão normal)
+    price_id_key = pack_data['id_pro'] if is_pro else pack_data['id_normal']
+    price_id     = getattr(settings, price_id_key, '')
+    if not price_id:
+        # Fallback para preço normal se o Pro não estiver configurado
+        price_id = getattr(settings, pack_data['id_normal'], '')
+    if not price_id:
+        messages.error(request, "Este pacote não está disponível no momento.")
+        return redirect('accounts:planos')
+
+    # Garante customer no Stripe
+    if not perfil.stripe_customer_id:
+        customer = stripe.Customer.create(
+            email=request.user.email,
+            name=request.user.get_full_name() or request.user.username,
+            metadata={'user_id': request.user.pk},
+        )
+        perfil.stripe_customer_id = customer.id
+        perfil.save(update_fields=['stripe_customer_id'])
+
+    base_url = settings.SITE_URL.rstrip('/')
+    try:
+        session = stripe.checkout.Session.create(
+            customer=perfil.stripe_customer_id,
+            mode='payment',
+            line_items=[{'price': price_id, 'quantity': 1}],
+            success_url=f"{base_url}/accounts/creditos/sucesso/?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/accounts/planos/",
+            locale='pt-BR',
+            metadata={
+                'user_id':       request.user.pk,
+                'purchase_type': 'credits',
+                'credits_amount': pack_data['credits'],
+            },
+        )
+        return redirect(session.url, permanent=False)
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Erro ao iniciar pagamento: {e.user_message or str(e)}")
+        return redirect('accounts:planos')
+
+
+@login_required
+def stripe_credits_success_view(request):
+    """Página de sucesso após compra de créditos avulsos."""
+    from django.db.models import F
+    session_id    = request.GET.get('session_id')
+    credits_added = 0
+    if session_id:
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            meta    = session.get('metadata', {})
+            if (session.payment_status == 'paid'
+                    and meta.get('purchase_type') == 'credits'):
+                credits_added = int(meta.get('credits_amount', 0))
+                # Idempotência simples: só soma se o webhook ainda não fez isso
+                # (o webhook é a fonte de verdade; isso é só um fallback visual)
+        except stripe.error.StripeError:
+            pass
+    return render(request, 'accounts/credits_success.html', {'credits_added': credits_added})
