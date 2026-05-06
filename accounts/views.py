@@ -362,11 +362,17 @@ def stripe_webhook_view(request):
 
     # ── Compra avulsa de créditos ─────────────────────────────────────────────
     elif ev_type == 'checkout.session.completed':
-        purchase_type = data.get('metadata', {}).get('purchase_type')
-        if purchase_type == 'credits' and data.get('payment_status') == 'paid':
-            from django.db.models import F
-            customer_id   = data.get('customer')
-            credits_amount = int(data.get('metadata', {}).get('credits_amount', 0))
+        from django.db.models import F
+        meta = data.metadata if hasattr(data, 'metadata') else (data.get('metadata') or {})
+        if isinstance(meta, dict):
+            purchase_type  = meta.get('purchase_type')
+            credits_amount = int(meta.get('credits_amount', 0) or 0)
+        else:
+            purchase_type  = getattr(meta, 'purchase_type', None)
+            credits_amount = int(getattr(meta, 'credits_amount', 0) or 0)
+        payment_status = getattr(data, 'payment_status', None) or data.get('payment_status')
+        if purchase_type == 'credits' and payment_status == 'paid':
+            customer_id = getattr(data, 'customer', None) or data.get('customer')
             if credits_amount > 0 and customer_id:
                 PerfilUsuario.objects.filter(stripe_customer_id=customer_id).update(
                     creditos_disponiveis=F('creditos_disponiveis') + credits_amount
@@ -449,21 +455,18 @@ def stripe_credits_checkout_view(request):
         return redirect('accounts:planos')
 
 
-@login_required
 def stripe_credits_success_view(request):
     """Página de sucesso após compra de créditos avulsos."""
-    from django.db.models import F
     session_id    = request.GET.get('session_id')
     credits_added = 0
     if session_id:
         try:
             session = stripe.checkout.Session.retrieve(session_id)
-            meta    = session.get('metadata', {})
+            # Stripe SDK v10+: usar atributo direto, não .get()
+            meta = session.metadata or {}
             if (session.payment_status == 'paid'
                     and meta.get('purchase_type') == 'credits'):
-                credits_added = int(meta.get('credits_amount', 0))
-                # Idempotência simples: só soma se o webhook ainda não fez isso
-                # (o webhook é a fonte de verdade; isso é só um fallback visual)
-        except stripe.error.StripeError:
+                credits_added = int(meta.get('credits_amount', 0) or 0)
+        except Exception:
             pass
     return render(request, 'accounts/credits_success.html', {'credits_added': credits_added})

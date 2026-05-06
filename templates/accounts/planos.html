@@ -116,10 +116,11 @@
                 <div class="mb-4 flex-1">
                     {% if request.user.perfil.plano_ativo %}
                     <p class="text-2xl font-black text-white">R$7,90</p>
-                    <p class="text-xs text-gray-600 line-through">R$9,90</p>
+                    <p class="text-xs text-gray-600">R$0,395 por crédito</p>
                     {% else %}
                     <p class="text-2xl font-black text-white">R$9,90</p>
-                    <p class="text-xs text-gray-600">R$0,495 por crédito</p>
+                    <p class="text-xs text-gray-500 line-through mt-0.5">R$7,90 com Pro</p>
+                    <p class="text-xs text-green-500 mt-1 font-semibold">Assine o Pro e ganhe desconto</p>
                     {% endif %}
                 </div>
                 <a href="{% url 'accounts:credits_checkout' %}?pack=20"
@@ -143,10 +144,11 @@
                 <div class="mb-4 flex-1">
                     {% if request.user.perfil.plano_ativo %}
                     <p class="text-2xl font-black text-white">R$18,90</p>
-                    <p class="text-xs text-gray-600 line-through">R$22,90</p>
+                    <p class="text-xs text-gray-600">R$0,378 por crédito</p>
                     {% else %}
                     <p class="text-2xl font-black text-white">R$22,90</p>
-                    <p class="text-xs text-gray-600">R$0,458 por crédito</p>
+                    <p class="text-xs text-gray-500 line-through mt-0.5">R$18,90 com Pro</p>
+                    <p class="text-xs text-green-500 mt-1 font-semibold">Assine o Pro e ganhe desconto</p>
                     {% endif %}
                 </div>
                 <a href="{% url 'accounts:credits_checkout' %}?pack=50"
@@ -168,10 +170,11 @@
                 <div class="mb-4 flex-1">
                     {% if request.user.perfil.plano_ativo %}
                     <p class="text-2xl font-black text-white">R$33,90</p>
-                    <p class="text-xs text-gray-600 line-through">R$39,90</p>
+                    <p class="text-xs text-gray-600">R$0,339 por crédito</p>
                     {% else %}
                     <p class="text-2xl font-black text-white">R$39,90</p>
-                    <p class="text-xs text-gray-600">R$0,399 por crédito</p>
+                    <p class="text-xs text-gray-500 line-through mt-0.5">R$33,90 com Pro</p>
+                    <p class="text-xs text-green-500 mt-1 font-semibold">Assine o Pro e ganhe desconto</p>
                     {% endif %}
                 </div>
                 <a href="{% url 'accounts:credits_checkout' %}?pack=100"
