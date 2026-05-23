@@ -39,6 +39,12 @@ cloudflared.exe
 # Estáticos coletados (gerados no build)
 staticfiles/
 
+# Scripts de desenvolvimento local (não necessários na VPS)
+scripts/
+
+# Landing standalone (deployment separado no Cloud Run)
+landing-standalone/
+
 # Artefatos gerados localmente
 *.zip
 b2bzap-landing.zip

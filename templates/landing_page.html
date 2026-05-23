@@ -23,11 +23,8 @@
                         radial-gradient(ellipse at 10% 80%, rgba(18,140,126,0.08) 0%, transparent 50%),
                         #0a0a0a;
         }
-        .section-bg { background: #0f0f0f; }
+        .section-alt { background: #0f0f0f; }
         .card-bg { background: #161616; border: 1px solid #222; }
-
-        .card-glow { transition: all 0.3s ease; }
-        .card-glow:hover { box-shadow: 0 0 30px rgba(37,211,102,0.15); transform: translateY(-4px); }
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
@@ -57,24 +54,6 @@
         .faq-icon { transition: transform 0.3s ease; }
         .faq-icon.open { transform: rotate(45deg); }
 
-        /* Gradient border */
-        .gradient-border {
-            position: relative;
-            background: #161616;
-        }
-        .gradient-border::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            padding: 1px;
-            background: linear-gradient(135deg, #25D366, #128C7E, transparent);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-        }
-
         /* Shine effect on CTA */
         @keyframes shine {
             0% { left: -100%; }
@@ -95,8 +74,81 @@
         .tab-btn:hover { background: rgba(255,255,255,0.08); color: #d1d5db; }
         .tab-btn.active-tab { background: rgba(37,211,102,0.15); color: #4ade80; border-color: rgba(37,211,102,0.4); }
 
-        /* App mockup scrollable on mobile */
+        /* App mockup */
         .mockup-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 767px) {
+            .mockup-sidebar { display: none !important; }
+            .mockup-outer   { min-width: 0 !important; }
+            .mockup-shell   { height: 360px !important; }
+        }
+
+        /* Mobile nav */
+        .mobile-menu { display:none; }
+        .mobile-menu.open { display:block; }
+
+        /* Credits packs */
+        .pack-card { background:#161616; border:1px solid #222; transition: all 0.3s ease; }
+        .pack-card:hover { border-color: rgba(37,211,102,0.35); box-shadow: 0 0 20px rgba(37,211,102,0.1); }
+        .pack-popular { background: linear-gradient(135deg,#0d1f14,#0a1a10); border-color: rgba(37,211,102,0.35); }
+
+        /* WhatsApp phone mockup */
+        .phone-frame {
+            width: 260px;
+            background: #111;
+            border-radius: 36px;
+            border: 6px solid #222;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05);
+            overflow: hidden;
+            position: relative;
+        }
+        .phone-status-bar {
+            background: #075E54;
+            padding: 8px 16px 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .phone-chat-bg {
+            background: #0a0a0a;
+            min-height: 360px;
+            padding: 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .msg-out {
+            align-self: flex-end;
+            background: #005c4b;
+            color: #e9edef;
+            border-radius: 12px 12px 2px 12px;
+            padding: 8px 12px;
+            font-size: 12px;
+            max-width: 85%;
+            line-height: 1.5;
+        }
+        .msg-in {
+            align-self: flex-start;
+            background: #202c33;
+            color: #e9edef;
+            border-radius: 12px 12px 12px 2px;
+            padding: 8px 12px;
+            font-size: 12px;
+            max-width: 85%;
+            line-height: 1.5;
+        }
+        .msg-time { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 3px; text-align: right; }
+        .msg-check { color: #53bdeb; font-size: 10px; }
+
+        /* Step number circle */
+        .step-num {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            background: rgba(37,211,102,0.12);
+            border: 1px solid rgba(37,211,102,0.3);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 900; color: #25D366;
+            flex-shrink: 0;
+        }
 
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0a0a0a; }
@@ -105,7 +157,7 @@
 </head>
 <body class="hero-bg text-white">
 
-<!-- NAV -->
+<!-- ── NAV ─────────────────────────────────────────────────────── -->
 <nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-black/40 border-b border-white/5">
     <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -116,49 +168,55 @@
         </div>
         <div class="hidden md:flex items-center gap-8 text-sm text-gray-400">
             <a href="#como-funciona" class="hover:text-white transition-colors">Como funciona</a>
-            <a href="#preview" class="hover:text-white transition-colors">Prévia</a>
-            <a href="#precos" class="hover:text-white transition-colors">Créditos & Planos</a>
+            <a href="#precos" class="hover:text-white transition-colors">Preços</a>
             <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
         </div>
         <div class="flex items-center gap-3">
             <a href="{% url 'accounts:login' %}" class="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2">Entrar</a>
-            <a href="{% url 'accounts:register' %}" class="text-sm font-semibold px-4 py-2 rounded-lg gradient-green hover:opacity-90 transition-opacity btn-shine">Começar grátis</a>
+            <button id="nav-toggle" onclick="toggleMobileMenu()" class="md:hidden p-2 text-gray-400 hover:text-white transition-colors">
+                <i class="fas fa-bars text-lg"></i>
+            </button>
+        </div>
+    </div>
+    <div id="mobile-menu" class="mobile-menu md:hidden border-t border-white/5 bg-black/90 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col gap-1">
+            <a href="#como-funciona" onclick="toggleMobileMenu()" class="py-3 px-4 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium">Como funciona</a>
+            <a href="#precos" onclick="toggleMobileMenu()" class="py-3 px-4 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium">Preços</a>
+            <a href="#faq" onclick="toggleMobileMenu()" class="py-3 px-4 rounded-lg text-gray-300 hover:text-white hover:bg-white/5 transition-colors text-sm font-medium">FAQ</a>
+            <div class="border-t border-white/10 mt-2 pt-4 flex flex-col gap-2">
+                <a href="{% url 'accounts:login' %}" class="py-3 px-4 rounded-lg text-center text-gray-300 border border-white/20 font-semibold text-sm hover:bg-white/5 transition-colors">Entrar</a>
+                <a href="{% url 'accounts:register' %}" class="py-3 px-4 rounded-lg text-center gradient-green font-bold text-sm hover:opacity-90 transition-opacity">Começar grátis</a>
+            </div>
         </div>
     </div>
 </nav>
 
-<!-- HERO -->
-<section class="pt-32 pb-24 px-6">
+<!-- ── HERO (TEXT) ──────────────────────────────────────────────── -->
+<section class="pt-32 pb-20 px-6">
     <div class="max-w-4xl mx-auto text-center">
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-sm text-gray-400 mb-8 fade-in">
             <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
             Mais de <strong class="text-white mx-1">500 leads</strong> gerados todo mês pelos nossos usuários
         </div>
 
-        <h1 class="text-5xl md:text-7xl font-black leading-tight tracking-tight mb-6 fade-in-delay-1">
+        <h1 class="text-4xl sm:text-5xl md:text-7xl font-black leading-tight tracking-tight mb-6 fade-in-delay-1">
             Pare de perder tempo<br>
             <span class="gradient-text">prospectando à mão.</span>
         </h1>
 
-        <p class="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-4 fade-in-delay-2">
+        <p class="text-base md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 fade-in-delay-2">
             O B2BZap encontra seus clientes no Google Maps, extrai o contato deles e manda mensagem no WhatsApp — tudo automático, enquanto você faz outra coisa.
         </p>
-        <p class="text-sm text-gray-500 mb-10 fade-in-delay-2">Sem planilha. Sem copiar e colar. Sem perder horas.</p>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 fade-in-delay-3">
-            <a href="{% url 'accounts:register' %}" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl gradient-green font-bold text-lg hover:opacity-90 transition-all hover:scale-105 btn-shine">
+        <div class="flex justify-center fade-in-delay-3">
+            <a href="{% url 'accounts:register' %}" class="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl gradient-green font-bold text-lg hover:opacity-90 transition-all hover:scale-105 btn-shine">
                 <i class="fab fa-whatsapp"></i>
                 Testar grátis agora
-            </a>
-            <a href="#como-funciona" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white/5 border border-white/10 font-semibold hover:bg-white/10 transition-colors">
-                Ver como funciona
-                <i class="fas fa-arrow-down text-sm"></i>
             </a>
         </div>
 
         <p class="text-xs text-gray-600 mt-4 fade-in-delay-3">Sem cartão de crédito • Cancele quando quiser</p>
 
-        <!-- Stats -->
         <div class="grid grid-cols-3 gap-6 max-w-lg mx-auto mt-16 fade-in-delay-3">
             <div class="text-center">
                 <div class="text-3xl font-black gradient-text">100</div>
@@ -176,267 +234,273 @@
     </div>
 </section>
 
-<!-- PROBLEMA -->
-<section class="section-bg py-20 px-6">
-    <div class="max-w-4xl mx-auto">
-        <div class="text-center mb-12 reveal">
-            <p class="text-red-400 text-sm font-semibold uppercase tracking-widest mb-3">O problema</p>
-            <h2 class="text-3xl md:text-4xl font-black">Você já perdeu horas fazendo isso:</h2>
-        </div>
-        <div class="grid md:grid-cols-3 gap-6">
-            <div class="card-bg rounded-2xl p-6 reveal reveal-delay-1">
-                <div class="text-3xl mb-4">😤</div>
-                <h3 class="font-bold mb-2 text-red-400">Pesquisa manual</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Abrindo Google Maps, copiando telefone por telefone, salvando em planilha… levando horas para conseguir 20 contatos.</p>
-            </div>
-            <div class="card-bg rounded-2xl p-6 reveal reveal-delay-2">
-                <div class="text-3xl mb-4">📋</div>
-                <h3 class="font-bold mb-2 text-red-400">Planilhas bagunçadas</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Leads duplicados, sem organização, sem saber quem já foi contatado. Tempo perdido e oportunidades perdidas.</p>
-            </div>
-            <div class="card-bg rounded-2xl p-6 reveal reveal-delay-3">
-                <div class="text-3xl mb-4">😴</div>
-                <h3 class="font-bold mb-2 text-red-400">Disparo manual</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">Mandando mensagem um por um no WhatsApp, copiando e colando o mesmo texto dezenas de vezes. Isso tem que acabar.</p>
-            </div>
-        </div>
-        <div class="text-center mt-10 reveal">
-            <p class="text-xl font-bold">Com o B2BZap, <span class="gradient-text">tudo isso some em 3 minutos.</span></p>
-        </div>
-    </div>
-</section>
-
-<!-- COMO FUNCIONA -->
-<section id="como-funciona" class="hero-bg py-24 px-6">
-    <div class="max-w-6xl mx-auto">
+<!-- ── COMO FUNCIONA: 3 PASSOS ──────────────────────────────────── -->
+<section id="como-funciona" class="section-alt py-20 px-4">
+    <div class="max-w-5xl mx-auto">
         <div class="text-center mb-16 reveal">
             <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Como funciona</p>
-            <h2 class="text-4xl md:text-5xl font-black">De zero a 100 leads<br>em 3 passos</h2>
-        </div>
-        <div class="grid md:grid-cols-3 gap-8">
-            <div class="card-bg rounded-2xl p-8 card-glow relative reveal reveal-delay-1 cursor-pointer" onclick="document.getElementById('preview').scrollIntoView({behavior:'smooth'}); setTimeout(()=>showTab(1), 500)">
-                <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim">
-                    <i class="fas fa-search text-white text-xl"></i>
-                </div>
-                <div class="text-5xl font-black text-white/5 absolute top-6 right-8">01</div>
-                <h3 class="text-xl font-bold mb-3">Digite o nicho e a cidade</h3>
-                <p class="text-gray-400 leading-relaxed">Ex: "Clínicas odontológicas em São Paulo". O B2BZap varre o Google Maps e traz nome, telefone e endereço de cada empresa.</p>
-                <div class="mt-4 text-xs text-green-400 font-semibold">⚡ Leva menos de 1 minuto</div>
-                <div class="mt-3 text-xs text-gray-600 flex items-center gap-1">Ver prévia <i class="fas fa-arrow-right"></i></div>
-            </div>
-            <div class="card-bg rounded-2xl p-8 card-glow relative reveal reveal-delay-2 cursor-pointer" onclick="document.getElementById('preview').scrollIntoView({behavior:'smooth'}); setTimeout(()=>showTab(2), 500)">
-                <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim" style="animation-delay:0.5s">
-                    <i class="fas fa-layer-group text-white text-xl"></i>
-                </div>
-                <div class="text-5xl font-black text-white/5 absolute top-6 right-8">02</div>
-                <h3 class="text-xl font-bold mb-3">Extraia e organize em campanhas</h3>
-                <p class="text-gray-400 leading-relaxed">Seus leads ficam salvos e organizados. Saiba exatamente quem foi contatado, quem respondeu e quem está pendente.</p>
-                <div class="mt-4 text-xs text-green-400 font-semibold">📊 Controle total</div>
-                <div class="mt-3 text-xs text-gray-600 flex items-center gap-1">Ver prévia <i class="fas fa-arrow-right"></i></div>
-            </div>
-            <div class="card-bg rounded-2xl p-8 card-glow relative reveal reveal-delay-3 cursor-pointer" onclick="document.getElementById('preview').scrollIntoView({behavior:'smooth'}); setTimeout(()=>showTab(3), 500)">
-                <div class="w-12 h-12 rounded-xl gradient-green flex items-center justify-center mb-6 float-anim" style="animation-delay:1s">
-                    <i class="fab fa-whatsapp text-white text-xl"></i>
-                </div>
-                <div class="text-5xl font-black text-white/5 absolute top-6 right-8">03</div>
-                <h3 class="text-xl font-bold mb-3">Dispare no WhatsApp</h3>
-                <p class="text-gray-400 leading-relaxed">Com um clique, sua mensagem vai para todos os leads da campanha pelo WhatsApp. Você decide a hora, o texto e o tom.</p>
-                <div class="mt-4 text-xs text-green-400 font-semibold">🚀 Sem copiar e colar</div>
-                <div class="mt-3 text-xs text-gray-600 flex items-center gap-1">Ver prévia <i class="fas fa-arrow-right"></i></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- PREVIEW DO PRODUTO -->
-<section id="preview" class="section-bg py-20 px-4">
-    <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-12 reveal">
-            <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Prévia real</p>
-            <h2 class="text-4xl md:text-5xl font-black">Veja como é por dentro</h2>
-            <p class="text-gray-400 mt-4 max-w-xl mx-auto">Interface simples, sem curva de aprendizado. Clique nos passos abaixo para explorar cada tela.</p>
+            <h2 class="text-3xl md:text-4xl font-black">De zero a 100 leads em 3 passos</h2>
         </div>
 
-        <!-- Tab buttons -->
-        <div class="flex justify-center gap-2 mb-6 flex-wrap reveal">
-            <button onclick="showTab(1)" id="tab-btn-1" class="tab-btn active-tab px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all">
-                <i class="fas fa-search mr-2"></i>1. Buscar leads
-            </button>
-            <button onclick="showTab(2)" id="tab-btn-2" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all">
-                <i class="fas fa-map-marker-alt mr-2"></i>2. Ver resultados
-            </button>
-            <button onclick="showTab(3)" id="tab-btn-3" class="tab-btn px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all">
-                <i class="fab fa-whatsapp mr-2"></i>3. Disparar
-            </button>
-        </div>
-
-        <!-- Browser window mockup -->
-        <div class="mockup-wrapper reveal">
-            <div style="min-width:700px;">
-                <div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 30px 80px rgba(0,0,0,0.7);">
-                    <!-- Browser chrome -->
-                    <div style="background:#1c1c1c;padding:10px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div style="display:flex;gap:6px;flex-shrink:0;">
-                            <div style="width:12px;height:12px;border-radius:50%;background:#ff5f57;"></div>
-                            <div style="width:12px;height:12px;border-radius:50%;background:#febc2e;"></div>
-                            <div style="width:12px;height:12px;border-radius:50%;background:#28c840;"></div>
+        <!-- PASSO 1 — texto → imagem -->
+        <div class="mb-20">
+            <!-- texto acima -->
+            <div class="max-w-2xl mx-auto text-center mb-8 reveal">
+                <p class="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">Passo 1</p>
+                <h3 class="text-2xl font-bold mb-3">Digite o nicho e a cidade</h3>
+                <p class="text-gray-400 leading-relaxed">Você informa o tipo de empresa e onde quer buscar. O B2BZap varre o Google Maps em segundos e traz nome, telefone e endereço de cada negócio encontrado.</p>
+            </div>
+            <div class="mockup-wrapper reveal">
+                <div style="min-width:680px;">
+                    <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="background:#1c1c1c;padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div style="display:flex;gap:5px;flex-shrink:0;"><div style="width:11px;height:11px;border-radius:50%;background:#ff5f57;"></div><div style="width:11px;height:11px;border-radius:50%;background:#febc2e;"></div><div style="width:11px;height:11px;border-radius:50%;background:#28c840;"></div></div>
+                            <div style="background:#111;border-radius:5px;padding:4px 11px;font-size:10px;color:#6b7280;display:flex;align-items:center;gap:5px;flex:1;max-width:240px;"><i class="fas fa-lock" style="font-size:8px;color:#4b5563;"></i>app.b2bzap.com.br/buscar</div>
                         </div>
-                        <div style="background:#111;border-radius:6px;padding:5px 12px;font-size:11px;color:#6b7280;max-width:300px;display:flex;align-items:center;gap:6px;flex:1;">
-                            <i class="fas fa-lock" style="font-size:9px;color:#4b5563;"></i>
-                            <span id="browser-url">app.b2bzap.com.br/buscar</span>
-                        </div>
-                    </div>
-                    <!-- App shell -->
-                    <div style="display:flex;height:430px;background:#0a0a0a;overflow:hidden;">
-                        <!-- Sidebar -->
-                        <div style="width:210px;background:#0f0f0f;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;">
-                            <!-- Logo -->
-                            <div style="height:56px;display:flex;align-items:center;padding:0 18px;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px;flex-shrink:0;">
-                                <div style="width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <i class="fab fa-whatsapp" style="color:white;font-size:14px;"></i>
-                                </div>
-                                <span style="font-size:16px;font-weight:700;color:white;letter-spacing:-0.3px;">B2BZap</span>
+                        <div class="mockup-shell" style="display:flex;height:320px;background:#0a0a0a;overflow:hidden;">
+                            <div class="mockup-sidebar" style="width:200px;background:#0f0f0f;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;">
+                                <div style="height:50px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px;flex-shrink:0;"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fab fa-whatsapp" style="color:white;font-size:13px;"></i></div><span style="font-size:15px;font-weight:700;color:white;">B2BZap</span></div>
+                                <nav style="padding:8px;flex:1;">
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-bullhorn" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Campanhas</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#25D366;background:rgba(37,211,102,0.12);font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-search" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Buscar Leads</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-database" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Meu Banco</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;text-decoration:none;"><i class="fab fa-whatsapp" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>WhatsApp</a>
+                                </nav>
                             </div>
-                            <!-- Nav items -->
-                            <nav style="padding:10px;flex:1;">
-                                <a id="nav-campanhas" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#6b7280;font-size:13px;font-weight:500;margin-bottom:2px;text-decoration:none;transition:all 0.2s;">
-                                    <i class="fas fa-bullhorn" style="width:16px;text-align:center;font-size:13px;flex-shrink:0;"></i>Campanhas
-                                </a>
-                                <a id="nav-buscar" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#25D366;background:rgba(37,211,102,0.12);font-size:13px;font-weight:500;margin-bottom:2px;text-decoration:none;transition:all 0.2s;">
-                                    <i class="fas fa-search" style="width:16px;text-align:center;font-size:13px;flex-shrink:0;"></i>Buscar Leads
-                                </a>
-                                <a id="nav-banco" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#6b7280;font-size:13px;font-weight:500;margin-bottom:2px;text-decoration:none;transition:all 0.2s;">
-                                    <i class="fas fa-database" style="width:16px;text-align:center;font-size:13px;flex-shrink:0;"></i>Meu Banco
-                                </a>
-                                <a style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#6b7280;font-size:13px;font-weight:500;margin-bottom:2px;text-decoration:none;">
-                                    <i class="fab fa-whatsapp" style="width:16px;text-align:center;font-size:13px;flex-shrink:0;"></i>WhatsApp
-                                </a>
-                                <a style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#6b7280;font-size:13px;font-weight:500;text-decoration:none;">
-                                    <i class="fas fa-coins" style="width:16px;text-align:center;font-size:13px;flex-shrink:0;"></i>Créditos & Planos
-                                </a>
-                            </nav>
-                            <!-- User footer -->
-                            <div style="padding:10px;border-top:1px solid rgba(255,255,255,0.05);">
-                                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;color:#6b7280;font-size:12px;">
-                                    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;">P</div>
-                                    Pedro
+                            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                                <div style="height:50px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:#0f0f0f;flex-shrink:0;"><div style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:7px;"><i class="fas fa-coins" style="color:#facc15;font-size:10px;"></i><span style="font-size:11px;color:#d1d5db;font-weight:600;">98 créditos</span></div></div>
+                                <div style="flex:1;padding:20px 22px;overflow-y:auto;">
+                                    <div style="margin-bottom:16px;"><h2 style="font-size:17px;font-weight:700;color:white;margin-bottom:3px;">Buscar Leads</h2><p style="font-size:12px;color:#6b7280;">Encontre empresas no Google Maps pelo nicho e cidade</p></div>
+                                    <div style="background:#161616;border:1px solid #222;border-radius:12px;padding:18px;max-width:360px;">
+                                        <div style="margin-bottom:12px;"><label style="display:block;font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Nicho de Mercado</label><div style="background:#0f0f0f;border:1px solid rgba(37,211,102,0.4);border-radius:8px;padding:8px 12px;color:#e5e7eb;font-size:13px;">Clínicas odontológicas</div></div>
+                                        <div style="margin-bottom:14px;"><label style="display:block;font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Localização</label><div style="background:#0f0f0f;border:1px solid rgba(37,211,102,0.4);border-radius:8px;padding:8px 12px;color:#e5e7eb;font-size:13px;">São Paulo, SP</div></div>
+                                        <div style="width:100%;padding:10px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:8px;color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px;"><i class="fas fa-search"></i>Buscar no Google Maps</div>
+                                        <p style="text-align:center;font-size:10px;color:#4b5563;margin-top:8px;">1 crédito por busca · <strong style="color:#25D366;">98 disponíveis</strong></p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <!-- Main content -->
-                        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-                            <!-- Top header bar -->
-                            <div style="height:56px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:flex-end;padding:0 22px;gap:10px;background:#0f0f0f;flex-shrink:0;">
-                                <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;">
-                                    <i class="fas fa-coins" style="color:#facc15;font-size:11px;"></i>
-                                    <span style="font-size:12px;color:#d1d5db;font-weight:600;">98 crédito(s)</span>
-                                </div>
-                                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">P</div>
-                            </div>
-                            <!-- Dynamic tab content -->
-                            <div id="app-content" style="flex:1;padding:24px 28px;overflow-y:auto;"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <p class="text-center text-xs text-gray-600 mt-4">Prévia simplificada. A experiência completa está disponível após o cadastro.</p>
-    </div>
-</section>
 
-<!-- FUNCIONALIDADES -->
-<section id="funcionalidades" class="hero-bg py-24 px-6">
-    <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-16 reveal">
-            <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Funcionalidades</p>
-            <h2 class="text-4xl md:text-5xl font-black">Tudo que você precisa,<br>nada que você não precisa</h2>
-        </div>
-        <div class="grid md:grid-cols-2 gap-6">
-            <div class="card-bg rounded-2xl p-8 card-glow flex gap-5 reveal reveal-delay-1">
-                <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-map-marker-alt text-green-400 text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Extração via Google Maps</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Qualquer nicho, qualquer cidade do Brasil. Nome, telefone, endereço e site extraídos automaticamente.</p>
-                </div>
+        <!-- PASSO 2 — texto → imagem -->
+        <div class="mb-20">
+            <!-- texto acima -->
+            <div class="max-w-2xl mx-auto text-center mb-8 reveal">
+                <p class="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">Passo 2</p>
+                <h3 class="text-2xl font-bold mb-3">Veja os resultados e extraia</h3>
+                <p class="text-gray-400 leading-relaxed">O B2BZap lista todos os negócios encontrados. Com um clique você extrai o contato e salva no seu banco pessoal — os leads ficam seus para sempre, sem gastar crédito para acessar de novo.</p>
             </div>
-            <div class="card-bg rounded-2xl p-8 card-glow flex gap-5 reveal reveal-delay-2">
-                <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fab fa-whatsapp text-green-400 text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Disparo em massa no WhatsApp</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Conecte seu número e dispare para toda a campanha de uma vez. Sem bots externos, sem risco.</p>
-                </div>
-            </div>
-            <div class="card-bg rounded-2xl p-8 card-glow flex gap-5 reveal reveal-delay-1">
-                <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-chart-line text-green-400 text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Gestão de campanhas</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Crie campanhas por nicho ou cidade. Acompanhe quem foi contatado e quem ainda está pendente.</p>
-                </div>
-            </div>
-            <div class="card-bg rounded-2xl p-8 card-glow flex gap-5 reveal reveal-delay-2">
-                <div class="w-12 h-12 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <i class="fas fa-database text-green-400 text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg mb-2">Banco de leads próprio</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Seus leads ficam salvos para sempre na sua conta. Reutilize em novas campanhas sem gastar crédito.</p>
+            <div class="mockup-wrapper reveal">
+                <div style="min-width:680px;">
+                    <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="background:#1c1c1c;padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div style="display:flex;gap:5px;flex-shrink:0;"><div style="width:11px;height:11px;border-radius:50%;background:#ff5f57;"></div><div style="width:11px;height:11px;border-radius:50%;background:#febc2e;"></div><div style="width:11px;height:11px;border-radius:50%;background:#28c840;"></div></div>
+                            <div style="background:#111;border-radius:5px;padding:4px 11px;font-size:10px;color:#6b7280;display:flex;align-items:center;gap:5px;flex:1;max-width:240px;"><i class="fas fa-lock" style="font-size:8px;color:#4b5563;"></i>app.b2bzap.com.br/resultados</div>
+                        </div>
+                        <div class="mockup-shell" style="display:flex;height:320px;background:#0a0a0a;overflow:hidden;">
+                            <div class="mockup-sidebar" style="width:200px;background:#0f0f0f;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;">
+                                <div style="height:50px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px;flex-shrink:0;"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fab fa-whatsapp" style="color:white;font-size:13px;"></i></div><span style="font-size:15px;font-weight:700;color:white;">B2BZap</span></div>
+                                <nav style="padding:8px;flex:1;">
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-bullhorn" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Campanhas</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#25D366;background:rgba(37,211,102,0.12);font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-search" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Buscar Leads</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-database" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Meu Banco</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;text-decoration:none;"><i class="fab fa-whatsapp" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>WhatsApp</a>
+                                </nav>
+                            </div>
+                            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                                <div style="height:50px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:#0f0f0f;flex-shrink:0;"><div style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:7px;"><i class="fas fa-coins" style="color:#facc15;font-size:10px;"></i><span style="font-size:11px;color:#d1d5db;font-weight:600;">97 créditos</span></div></div>
+                                <div style="flex:1;padding:16px 20px;overflow-y:auto;">
+                                    <div style="margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;"><div><h2 style="font-size:16px;font-weight:700;color:white;">16 resultados encontrados</h2><p style="font-size:11px;color:#6b7280;">"Clínicas odontológicas" — São Paulo, SP</p></div><div style="font-size:10px;color:#25D366;font-weight:600;background:rgba(37,211,102,0.1);padding:3px 9px;border-radius:7px;border:1px solid rgba(37,211,102,0.2);white-space:nowrap;">1 crédito por extração</div></div>
+                                    <div style="background:#161616;border:1px solid #222;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;"><div><div style="font-size:12px;font-weight:600;color:white;margin-bottom:2px;">Clínica Odonto Premium</div><div style="font-size:10px;color:#6b7280;">Av. Paulista, 1900 — São Paulo</div></div><div style="font-size:10px;color:#6b7280;padding:4px 9px;background:rgba(255,255,255,0.05);border-radius:5px;border:1px solid rgba(255,255,255,0.08);white-space:nowrap;flex-shrink:0;"><i class="fas fa-check" style="color:#25D366;margin-right:3px;"></i>Extraído</div></div>
+                                    <div style="background:#161616;border:1px solid #222;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;"><div><div style="font-size:12px;font-weight:600;color:white;margin-bottom:2px;">OdontoVida Paulista</div><div style="font-size:10px;color:#6b7280;">Rua Consolação, 200 — São Paulo</div></div><div style="font-size:10px;color:#25D366;font-weight:600;padding:4px 9px;background:rgba(37,211,102,0.1);border-radius:5px;border:1px solid rgba(37,211,102,0.25);white-space:nowrap;flex-shrink:0;"><i class="fas fa-download" style="margin-right:3px;"></i>Extrair · 1 crédito</div></div>
+                                    <div style="background:#161616;border:1px solid #222;border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;"><div><div style="font-size:12px;font-weight:600;color:white;margin-bottom:2px;">Dr. Marcos Implantes</div><div style="font-size:10px;color:#6b7280;">Rua Augusta, 500 — São Paulo</div></div><div style="font-size:10px;color:#25D366;font-weight:600;padding:4px 9px;background:rgba(37,211,102,0.1);border-radius:5px;border:1px solid rgba(37,211,102,0.25);white-space:nowrap;flex-shrink:0;"><i class="fas fa-download" style="margin-right:3px;"></i>Extrair · 1 crédito</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- PASSO 3 — texto → imagem -->
+        <div>
+            <!-- texto acima -->
+            <div class="max-w-2xl mx-auto text-center mb-8 reveal">
+                <p class="text-green-400 text-xs font-bold uppercase tracking-widest mb-2">Passo 3</p>
+                <h3 class="text-2xl font-bold mb-3">Dispare pelo WhatsApp</h3>
+                <p class="text-gray-400 leading-relaxed">Organize os leads em campanhas, selecione quem recebe e dispare com um clique. Sem copiar e colar, sem abrir contato por contato. Você acompanha quem foi contatado, quem respondeu e quem está pendente.</p>
+            </div>
+            <div class="mockup-wrapper reveal">
+                <div style="min-width:680px;">
+                    <div style="border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="background:#1c1c1c;padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div style="display:flex;gap:5px;flex-shrink:0;"><div style="width:11px;height:11px;border-radius:50%;background:#ff5f57;"></div><div style="width:11px;height:11px;border-radius:50%;background:#febc2e;"></div><div style="width:11px;height:11px;border-radius:50%;background:#28c840;"></div></div>
+                            <div style="background:#111;border-radius:5px;padding:4px 11px;font-size:10px;color:#6b7280;display:flex;align-items:center;gap:5px;flex:1;max-width:240px;"><i class="fas fa-lock" style="font-size:8px;color:#4b5563;"></i>app.b2bzap.com.br/campanha/3</div>
+                        </div>
+                        <div class="mockup-shell" style="display:flex;height:320px;background:#0a0a0a;overflow:hidden;">
+                            <div class="mockup-sidebar" style="width:200px;background:#0f0f0f;border-right:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;flex-shrink:0;">
+                                <div style="height:50px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid rgba(255,255,255,0.05);gap:8px;flex-shrink:0;"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fab fa-whatsapp" style="color:white;font-size:13px;"></i></div><span style="font-size:15px;font-weight:700;color:white;">B2BZap</span></div>
+                                <nav style="padding:8px;flex:1;">
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#25D366;background:rgba(37,211,102,0.12);font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-bullhorn" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Campanhas</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-search" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Buscar Leads</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;margin-bottom:2px;text-decoration:none;"><i class="fas fa-database" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>Meu Banco</a>
+                                    <a style="display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#6b7280;font-size:12px;font-weight:500;text-decoration:none;"><i class="fab fa-whatsapp" style="width:14px;text-align:center;font-size:12px;flex-shrink:0;"></i>WhatsApp</a>
+                                </nav>
+                            </div>
+                            <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+                                <div style="height:50px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:flex-end;padding:0 20px;background:#0f0f0f;flex-shrink:0;"><div style="display:flex;align-items:center;gap:5px;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:7px;"><i class="fas fa-coins" style="color:#facc15;font-size:10px;"></i><span style="font-size:11px;color:#d1d5db;font-weight:600;">95 créditos</span></div></div>
+                                <div style="flex:1;padding:16px 20px;overflow-y:auto;">
+                                    <div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;"><div><h2 style="font-size:16px;font-weight:700;color:white;">Clínicas SP — Maio 2026</h2><p style="font-size:11px;color:#6b7280;">3 leads · 2 selecionados</p></div><div style="padding:7px 12px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:7px;color:white;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px;cursor:pointer;flex-shrink:0;"><i class="fab fa-whatsapp"></i>Disparar (2)</div></div>
+                                    <div style="background:#161616;border:1px solid #222;border-radius:10px;overflow:hidden;">
+                                        <div style="padding:8px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid #222;background:rgba(255,255,255,0.02);"><div style="width:14px;height:14px;flex-shrink:0;"></div><div style="flex:3;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Nome</div><div style="flex:2;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">WhatsApp</div><div style="flex:2;font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Status</div></div>
+                                        <div style="padding:9px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,0.04);"><div style="width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#25D366,#128C7E);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><i class="fas fa-check" style="color:white;font-size:7px;"></i></div><div style="flex:3;font-size:12px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Clínica Odonto Premium</div><div style="flex:2;font-size:11px;color:#9ca3af;white-space:nowrap;">(11) 9 8765-4321</div><div style="flex:2;"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.2);white-space:nowrap;">Verificado</span></div></div>
+                                        <div style="padding:9px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,0.04);"><div style="width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#25D366,#128C7E);flex-shrink:0;display:flex;align-items:center;justify-content:center;"><i class="fas fa-check" style="color:white;font-size:7px;"></i></div><div style="flex:3;font-size:12px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dr. Oliveira Implantes</div><div style="flex:2;font-size:11px;color:#9ca3af;white-space:nowrap;">(11) 9 9234-5678</div><div style="flex:2;"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:rgba(234,179,8,0.12);color:#facc15;border:1px solid rgba(234,179,8,0.2);white-space:nowrap;">Contatado</span></div></div>
+                                        <div style="padding:9px 14px;display:flex;align-items:center;gap:9px;"><div style="width:14px;height:14px;border-radius:3px;border:1px solid #444;flex-shrink:0;"></div><div style="flex:3;font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">OdontoVida Paulista</div><div style="flex:2;font-size:11px;color:#9ca3af;white-space:nowrap;">(11) 9 3456-7890</div><div style="flex:2;"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;background:rgba(107,114,128,0.15);color:#9ca3af;border:1px solid rgba(107,114,128,0.2);white-space:nowrap;">Pendente</span></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </section>
 
-<!-- PREÇOS -->
-<section id="precos" class="section-bg py-24 px-6">
-    <div class="max-w-4xl mx-auto">
+<!-- ── WHATSAPP VISUAL (IMAGE) ──────────────────────────────────── -->
+<section class="section-alt py-20 px-6">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row items-center gap-16">
+
+            <!-- Text left -->
+            <div class="flex-1 reveal">
+                <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-4">Disparo em massa</p>
+                <h2 class="text-3xl md:text-4xl font-black mb-6 leading-tight">Sua mensagem chega<br>no WhatsApp deles.</h2>
+                <p class="text-gray-400 leading-relaxed mb-6">Conecte seu número pelo QR Code, escreva a mensagem uma vez e o B2BZap envia para toda a campanha. Personalizado, com intervalo entre envios — sem parecer robótico.</p>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 text-sm text-gray-400">
+                        <i class="fas fa-check text-green-400 w-4 flex-shrink-0"></i>
+                        Sem bots externos ou API paga
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-gray-400">
+                        <i class="fas fa-check text-green-400 w-4 flex-shrink-0"></i>
+                        Intervalo entre mensagens para proteção
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-gray-400">
+                        <i class="fas fa-check text-green-400 w-4 flex-shrink-0"></i>
+                        Mensagens personalizáveis por campanha
+                    </div>
+                </div>
+            </div>
+
+            <!-- Phone mockup right -->
+            <div class="flex-shrink-0 reveal reveal-delay-1">
+                <div class="relative flex items-center justify-center">
+                    <!-- Glow -->
+                    <div style="position:absolute;width:200px;height:200px;background:radial-gradient(circle,rgba(37,211,102,0.2) 0%,transparent 70%);pointer-events:none;"></div>
+                    <div class="phone-frame float-anim">
+                        <!-- Status bar -->
+                        <div class="phone-status-bar">
+                            <div style="display:flex;align-items:center;gap:6px;flex:1;">
+                                <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;">O</div>
+                                <div>
+                                    <div style="font-size:11px;font-weight:700;color:white;">OdontoVida SP</div>
+                                    <div style="font-size:9px;color:rgba(255,255,255,0.6);">online</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:12px;">
+                                <i class="fas fa-phone" style="color:rgba(255,255,255,0.7);font-size:13px;"></i>
+                                <i class="fas fa-ellipsis-v" style="color:rgba(255,255,255,0.7);font-size:13px;"></i>
+                            </div>
+                        </div>
+                        <!-- Chat -->
+                        <div class="phone-chat-bg">
+                            <div class="msg-out">
+                                Olá! Vi que a OdontoVida atende em São Paulo. Trabalho ajudando clínicas a conquistar mais pacientes. Posso te mostrar como?
+                                <div class="msg-time">09:14 <span class="msg-check"><i class="fas fa-check-double"></i></span></div>
+                            </div>
+                            <div class="msg-in">
+                                Boa tarde! Sim, temos interesse. Pode me falar mais?
+                                <div class="msg-time" style="text-align:left;">09:22</div>
+                            </div>
+                            <div class="msg-out">
+                                Claro! Quando você tem 15 minutos para uma chamada rápida? 🙂
+                                <div class="msg-time">09:23 <span class="msg-check"><i class="fas fa-check-double"></i></span></div>
+                            </div>
+                            <div class="msg-in">
+                                Amanhã às 10h funciona!
+                                <div class="msg-time" style="text-align:left;">09:31</div>
+                            </div>
+                        </div>
+                        <!-- Input bar -->
+                        <div style="background:#1c1c1c;padding:8px 10px;display:flex;align-items:center;gap:8px;border-top:1px solid #2a2a2a;">
+                            <div style="flex:1;background:#2a2a2a;border-radius:20px;padding:7px 14px;font-size:11px;color:#6b7280;">Mensagem</div>
+                            <div style="width:32px;height:32px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="fas fa-microphone" style="color:white;font-size:12px;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ── PREÇOS (TEXT) ────────────────────────────────────────────── -->
+<section id="precos" class="hero-bg py-24 px-6">
+    <div class="max-w-5xl mx-auto">
         <div class="text-center mb-16 reveal">
-            <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Preços</p>
+            <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">Créditos & Planos</p>
             <h2 class="text-4xl md:text-5xl font-black">Menos que um almoço por mês</h2>
-            <p class="text-gray-400 mt-4">E o retorno pode ser de milhares. Sem fidelidade, cancele quando quiser.</p>
+            <p class="text-gray-400 mt-4">Assine o Pro ou compre créditos avulsos sem compromisso.</p>
         </div>
-        <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            <div class="card-bg rounded-2xl p-8 reveal reveal-delay-1">
+
+        <!-- Planos mensais -->
+        <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto reveal">
+            <div class="card-bg rounded-2xl p-8">
                 <div class="mb-6">
-                    <h3 class="text-xl font-bold mb-1">Grátis</h3>
-                    <p class="text-gray-500 text-sm">Para conhecer a plataforma</p>
-                </div>
-                <div class="mb-8">
-                    <span class="text-5xl font-black">R$0</span>
-                    <span class="text-gray-500">/mês</span>
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-widest">Gratuito</span>
+                    <div class="mt-3 flex items-end gap-1">
+                        <span class="text-5xl font-black">R$0</span>
+                        <span class="text-gray-500 mb-1">/mês</span>
+                    </div>
+                    <p class="text-gray-600 text-sm mt-1">Para sempre</p>
                 </div>
                 <ul class="space-y-3 mb-8 text-sm text-gray-400">
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> 5 créditos de extração</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> 1 campanha</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Disparo via WhatsApp</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-times text-gray-600 w-4"></i> <span class="line-through">Recarga mensal automática</span></li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> 10 créditos de extração</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Campanhas ilimitadas</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Busca no Google Maps</li>
+                    <li class="flex items-center gap-3 text-gray-600"><i class="fas fa-times w-4"></i> Recarga mensal automática</li>
+                    <li class="flex items-center gap-3 text-gray-600"><i class="fas fa-times w-4"></i> Suporte prioritário</li>
                 </ul>
-                <a href="{% url 'accounts:register' %}" class="block text-center py-3 rounded-xl border border-white/20 font-semibold hover:bg-white/5 transition-colors">
-                    Criar conta grátis
+                <a href="{% url 'accounts:register' %}" class="block text-center py-2 text-sm text-gray-500 hover:text-white transition-colors">
+                    Criar conta grátis →
                 </a>
             </div>
-            <div class="rounded-2xl p-8 relative overflow-hidden border border-green-500/30 reveal reveal-delay-2" style="background: linear-gradient(135deg, #0d1f14, #0a1a10);">
-                <div class="absolute top-4 right-4 px-3 py-1 rounded-full gradient-green text-xs font-bold">MAIS POPULAR</div>
-                <div class="mb-6">
-                    <h3 class="text-xl font-bold mb-1">Pro</h3>
-                    <p class="text-green-400/70 text-sm">Para quem leva prospecção a sério</p>
+            <div class="rounded-2xl p-8 relative overflow-hidden border border-green-500/30" style="background: linear-gradient(135deg, #0d1f14, #0a1a10);">
+                <div class="absolute -top-px left-1/2 -translate-x-1/2">
+                    <span class="inline-block px-3 py-1 text-xs font-bold rounded-b-lg gradient-green">RECOMENDADO</span>
                 </div>
-                <div class="mb-2">
-                    <span class="text-5xl font-black">R$27</span><span class="text-2xl font-black">,90</span>
-                    <span class="text-gray-400">/mês</span>
+                <div class="mb-6 mt-2">
+                    <span class="text-xs font-bold text-green-400/70 uppercase tracking-widest">Pro</span>
+                    <div class="mt-3 flex items-end gap-1">
+                        <span class="text-5xl font-black">R$27</span><span class="text-2xl font-black">,90</span>
+                        <span class="text-gray-400 mb-1">/mês</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">≈ R$0,28 por lead. Menos que qualquer anúncio.</p>
                 </div>
-                <p class="text-xs text-gray-500 mb-6">≈ R$0,28 por lead. Menos que qualquer anúncio.</p>
                 <ul class="space-y-3 mb-8 text-sm text-gray-300">
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> <strong>100 créditos</strong> de extração/mês</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> <strong>100 créditos</strong> por mês</li>
                     <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Campanhas ilimitadas</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Disparo via WhatsApp</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Busca no Google Maps</li>
                     <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Recarga automática todo mês</li>
-                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Banco de leads ilimitado</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Desconto em créditos avulsos</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-check text-green-400 w-4"></i> Suporte prioritário</li>
                 </ul>
                 <a href="{% url 'accounts:register' %}" class="block text-center py-3 rounded-xl gradient-green font-bold hover:opacity-90 transition-opacity btn-shine">
                     Assinar por R$27,90/mês
@@ -445,8 +509,67 @@
             </div>
         </div>
 
+        <!-- Créditos Avulsos -->
+        <div class="mt-16 reveal">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-white">Ou compre créditos avulsos</h3>
+                <p class="text-gray-500 text-sm mt-2">Sem assinatura. Os créditos somam ao seu saldo e <strong class="text-white">não expiram</strong>.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                <div class="pack-card rounded-2xl p-6 flex flex-col">
+                    <div class="mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                            <i class="fas fa-coins text-yellow-400"></i>
+                        </div>
+                        <p class="text-lg font-black text-white">20 créditos</p>
+                        <p class="text-xs text-gray-600 mt-0.5">= 20 extrações</p>
+                    </div>
+                    <div class="mb-5 flex-1">
+                        <p class="text-2xl font-black text-white">R$9,90</p>
+                        <p class="text-xs text-gray-500 mt-1">R$7,90 assinando o Pro</p>
+                    </div>
+                    <a href="{% url 'accounts:register' %}" class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity gradient-green">
+                        Comprar
+                    </a>
+                </div>
+                <div class="pack-popular rounded-2xl p-6 flex flex-col relative overflow-hidden">
+                    <div class="absolute top-3 right-3 px-2 py-0.5 text-xs font-bold rounded-full gradient-green">POPULAR</div>
+                    <div class="mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-green-500/15 border border-green-500/20 flex items-center justify-center mb-3">
+                            <i class="fas fa-coins text-green-400"></i>
+                        </div>
+                        <p class="text-lg font-black text-white">50 créditos</p>
+                        <p class="text-xs text-green-400/60 mt-0.5">= 50 extrações</p>
+                    </div>
+                    <div class="mb-5 flex-1">
+                        <p class="text-2xl font-black text-white">R$22,90</p>
+                        <p class="text-xs text-gray-500 mt-1">R$18,90 assinando o Pro</p>
+                    </div>
+                    <a href="{% url 'accounts:register' %}" class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity gradient-green">
+                        Comprar
+                    </a>
+                </div>
+                <div class="pack-card rounded-2xl p-6 flex flex-col">
+                    <div class="mb-4">
+                        <div class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-3">
+                            <i class="fas fa-coins text-orange-400"></i>
+                        </div>
+                        <p class="text-lg font-black text-white">100 créditos</p>
+                        <p class="text-xs text-gray-600 mt-0.5">= 100 extrações</p>
+                    </div>
+                    <div class="mb-5 flex-1">
+                        <p class="text-2xl font-black text-white">R$39,90</p>
+                        <p class="text-xs text-gray-500 mt-1">R$33,90 assinando o Pro</p>
+                    </div>
+                    <a href="{% url 'accounts:register' %}" class="block text-center py-2.5 px-4 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-opacity gradient-green">
+                        Comprar
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Garantia -->
-        <div class="mt-10 text-center reveal">
+        <div class="mt-12 text-center reveal">
             <div class="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/10">
                 <i class="fas fa-shield-alt text-green-400 text-xl"></i>
                 <div class="text-left">
@@ -458,8 +581,8 @@
     </div>
 </section>
 
-<!-- FAQ -->
-<section id="faq" class="hero-bg py-24 px-6">
+<!-- ── FAQ ──────────────────────────────────────────────────────── -->
+<section id="faq" class="section-alt py-24 px-6">
     <div class="max-w-3xl mx-auto">
         <div class="text-center mb-16 reveal">
             <p class="text-green-400 text-sm font-semibold uppercase tracking-widest mb-3">FAQ</p>
@@ -515,42 +638,42 @@
     </div>
 </section>
 
-<!-- CTA FINAL -->
-<section class="section-bg py-24 px-6">
-    <div class="max-w-2xl mx-auto text-center reveal">
-        <div class="w-16 h-16 rounded-2xl gradient-green flex items-center justify-center mx-auto mb-8 float-anim">
-            <i class="fab fa-whatsapp text-white text-3xl"></i>
+<!-- ── FOOTER ───────────────────────────────────────────────────── -->
+<footer class="hero-bg border-t border-white/5 py-14 px-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Mini CTA -->
+        <div class="text-center mb-10 reveal">
+            <p class="text-gray-400">Seus próximos clientes estão no Google Maps. <a href="{% url 'accounts:register' %}" class="text-green-400 hover:text-green-300 transition-colors font-semibold">Comece grátis agora →</a></p>
         </div>
-        <h2 class="text-4xl md:text-5xl font-black mb-4">Seus próximos clientes<br>estão no Google Maps.</h2>
-        <p class="text-gray-400 text-lg mb-3">O B2BZap vai buscar eles pra você agora.</p>
-        <p class="text-gray-600 text-sm mb-10">Comece grátis. Assine só se quiser mais.</p>
-        <a href="{% url 'accounts:register' %}" class="inline-flex items-center gap-3 px-10 py-5 rounded-xl gradient-green font-bold text-xl hover:opacity-90 transition-all hover:scale-105 btn-shine">
-            <i class="fab fa-whatsapp"></i>
-            Começar agora — é grátis
-        </a>
-        <p class="text-gray-600 text-xs mt-4">Sem cartão. Cancele quando quiser.</p>
-    </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="hero-bg border-t border-white/5 py-10 px-6">
-    <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
-        <div class="flex items-center gap-2">
-            <div class="w-6 h-6 rounded gradient-green flex items-center justify-center">
-                <i class="fab fa-whatsapp text-white text-xs"></i>
+        <div class="border-t border-white/5 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-600">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded gradient-green flex items-center justify-center">
+                    <i class="fab fa-whatsapp text-white text-xs"></i>
+                </div>
+                <span class="font-semibold text-gray-400">B2BZap</span>
             </div>
-            <span class="font-semibold text-gray-400">B2BZap</span>
-        </div>
-        <p>© 2026 B2BZap. Todos os direitos reservados.</p>
-        <div class="flex gap-6">
-            <a href="{% url 'accounts:login' %}" class="hover:text-gray-400 transition-colors">Entrar</a>
-            <a href="{% url 'accounts:register' %}" class="hover:text-gray-400 transition-colors">Cadastrar</a>
+            <p>© 2026 B2BZap. Todos os direitos reservados.</p>
+            <div class="flex gap-6">
+                <a href="{% url 'accounts:login' %}" class="hover:text-gray-400 transition-colors">Entrar</a>
+                <a href="{% url 'accounts:register' %}" class="hover:text-gray-400 transition-colors">Cadastrar</a>
+            </div>
         </div>
     </div>
 </footer>
 
 <script>
-// ── Scroll reveal ──────────────────────────────────────────
+// ── Mobile nav ─────────────────────────────────────────────────
+function toggleMobileMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+    const nav = document.querySelector('nav');
+    if (!nav.contains(e.target)) {
+        document.getElementById('mobile-menu').classList.remove('open');
+    }
+});
+
+// ── Scroll reveal ──────────────────────────────────────────────
 const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
         if (e.isIntersecting) {
@@ -561,7 +684,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// ── FAQ toggle ─────────────────────────────────────────────
+// ── FAQ toggle ─────────────────────────────────────────────────
 function toggleFaq(btn) {
     const answer = btn.nextElementSibling;
     const icon = btn.querySelector('.faq-icon');
@@ -576,146 +699,6 @@ function toggleFaq(btn) {
     }
 }
 
-// ── App Preview Tabs ───────────────────────────────────────
-function leadCard(nome, endereco, extraido) {
-    return `<div style="background:#161616;border:1px solid #222;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
-        <div>
-            <div style="font-size:13px;font-weight:600;color:white;margin-bottom:3px;">${nome}</div>
-            <div style="font-size:11px;color:#6b7280;">${endereco}</div>
-        </div>
-        ${extraido
-            ? '<div style="font-size:11px;color:#6b7280;padding:5px 10px;background:rgba(255,255,255,0.05);border-radius:6px;border:1px solid rgba(255,255,255,0.08);white-space:nowrap;flex-shrink:0;"><i class="fas fa-check" style="color:#25D366;margin-right:4px;"></i>Extraído</div>'
-            : '<div style="font-size:11px;color:#25D366;font-weight:600;padding:5px 10px;background:rgba(37,211,102,0.1);border-radius:6px;border:1px solid rgba(37,211,102,0.25);cursor:pointer;white-space:nowrap;flex-shrink:0;"><i class="fas fa-download" style="margin-right:4px;"></i>Extrair · 1 crédito</div>'
-        }
-    </div>`;
-}
-
-function campaignRow(nome, phone, status, color, checked) {
-    const palette = {
-        green:  'background:rgba(34,197,94,0.12);color:#4ade80;border:1px solid rgba(34,197,94,0.2)',
-        yellow: 'background:rgba(234,179,8,0.12);color:#facc15;border:1px solid rgba(234,179,8,0.2)',
-        gray:   'background:rgba(107,114,128,0.15);color:#9ca3af;border:1px solid rgba(107,114,128,0.2)'
-    };
-    return `<div style="padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div style="width:16px;height:16px;border-radius:4px;${checked ? 'background:linear-gradient(135deg,#25D366,#128C7E)' : 'border:1px solid #444'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-            ${checked ? '<i class="fas fa-check" style="color:white;font-size:8px;"></i>' : ''}
-        </div>
-        <div style="flex:3;font-size:13px;font-weight:${checked ? '500' : '400'};color:${checked ? 'white' : '#6b7280'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${nome}</div>
-        <div style="flex:2;font-size:12px;color:#9ca3af;white-space:nowrap;">${phone}</div>
-        <div style="flex:2;"><span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;${palette[color]};white-space:nowrap;">${status}</span></div>
-    </div>`;
-}
-
-const tabData = {
-    1: {
-        url: 'app.b2bzap.com.br/buscar',
-        nav: 'nav-buscar',
-        html: `<div>
-            <div style="margin-bottom:22px;">
-                <h2 style="font-size:20px;font-weight:700;color:white;margin-bottom:4px;">Buscar Leads</h2>
-                <p style="font-size:13px;color:#6b7280;">Encontre empresas no Google Maps pelo nicho e cidade</p>
-            </div>
-            <div style="background:#161616;border:1px solid #222;border-radius:16px;padding:24px;max-width:400px;">
-                <div style="margin-bottom:16px;">
-                    <label style="display:block;font-size:11px;font-weight:600;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Nicho de Mercado</label>
-                    <div style="background:#0f0f0f;border:1px solid rgba(37,211,102,0.4);border-radius:10px;padding:10px 14px;color:#e5e7eb;font-size:13px;">Clínicas odontológicas</div>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="display:block;font-size:11px;font-weight:600;color:#9ca3af;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Localização</label>
-                    <div style="background:#0f0f0f;border:1px solid rgba(37,211,102,0.4);border-radius:10px;padding:10px 14px;color:#e5e7eb;font-size:13px;">São Paulo, SP</div>
-                </div>
-                <div style="width:100%;padding:12px;background:linear-gradient(135deg,#25D366,#128C7E);border-radius:10px;color:white;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;">
-                    <i class="fas fa-search"></i> Buscar no Google Maps
-                </div>
-                <p style="text-align:center;font-size:11px;color:#4b5563;margin-top:10px;">1 crédito por busca &bull; Você tem <strong style="color:#25D366;">98 créditos</strong></p>
-            </div>
-        </div>`
-    },
-    2: {
-        url: 'app.b2bzap.com.br/resultados',
-        nav: 'nav-buscar',
-        html: `<div>
-            <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
-                <div>
-                    <h2 style="font-size:18px;font-weight:700;color:white;">16 resultados encontrados</h2>
-                    <p style="font-size:12px;color:#6b7280;">"Clínicas odontológicas" em São Paulo, SP</p>
-                </div>
-                <div style="font-size:11px;color:#25D366;font-weight:600;background:rgba(37,211,102,0.1);padding:4px 10px;border-radius:8px;border:1px solid rgba(37,211,102,0.2);white-space:nowrap;">1 crédito por extração</div>
-            </div>
-            ${leadCard('Clínica Odonto Premium', 'Av. Paulista, 1900 — São Paulo', true)}
-            ${leadCard('Dr. Oliveira Implantes', 'Rua Augusta, 650 — São Paulo', true)}
-            ${leadCard('OdontoVida Paulista', 'Rua Consolação, 200 — São Paulo', false)}
-            ${leadCard('Sorridentes São Paulo', 'Av. Brig. Faria Lima, 400 — SP', false)}
-        </div>`
-    },
-    3: {
-        url: 'app.b2bzap.com.br/campanha/3',
-        nav: 'nav-campanhas',
-        html: `<div>
-            <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                <div>
-                    <h2 style="font-size:18px;font-weight:700;color:white;">Clínicas SP — Maio 2026</h2>
-                    <p style="font-size:12px;color:#6b7280;">4 leads · 3 selecionados</p>
-                </div>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <div style="padding:8px 14px;background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:8px;color:white;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;">
-                        <i class="fab fa-whatsapp"></i>Disparar (3)
-                    </div>
-                </div>
-            </div>
-            <div style="background:#161616;border:1px solid #222;border-radius:12px;overflow:hidden;">
-                <div style="padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #222;background:rgba(255,255,255,0.02);">
-                    <div style="width:16px;height:16px;border-radius:4px;border:1px solid #444;flex-shrink:0;"></div>
-                    <div style="flex:3;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Nome</div>
-                    <div style="flex:2;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">WhatsApp</div>
-                    <div style="flex:2;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">Status</div>
-                </div>
-                ${campaignRow('Clínica Odonto Premium', '(11) 9 8765-4321', 'Verificado', 'green', true)}
-                ${campaignRow('Dr. Oliveira Implantes', '(11) 9 9234-5678', 'Contatado', 'yellow', true)}
-                ${campaignRow('OdontoVida Paulista', '(11) 9 3456-7890', 'Pendente', 'gray', true)}
-                ${campaignRow('Sorridentes São Paulo', '(11) 9 8877-6655', 'Verificado', 'green', false)}
-            </div>
-        </div>`
-    }
-};
-
-const navIds = ['nav-campanhas', 'nav-buscar', 'nav-banco'];
-
-function showTab(n) {
-    // Update tab buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active-tab'));
-    document.getElementById('tab-btn-' + n).classList.add('active-tab');
-
-    // Update sidebar active nav
-    navIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.background = '';
-            el.style.color = '#6b7280';
-        }
-    });
-    const activeNavId = tabData[n].nav;
-    const activeNavEl = document.getElementById(activeNavId);
-    if (activeNavEl) {
-        activeNavEl.style.background = 'rgba(37,211,102,0.12)';
-        activeNavEl.style.color = '#25D366';
-    }
-
-    // Update browser URL
-    document.getElementById('browser-url').textContent = tabData[n].url;
-
-    // Fade content
-    const content = document.getElementById('app-content');
-    content.style.opacity = '0';
-    content.style.transition = 'opacity 0.2s ease';
-    setTimeout(() => {
-        content.innerHTML = tabData[n].html;
-        content.style.opacity = '1';
-    }, 150);
-}
-
-// Initialize
-showTab(1);
 </script>
 </body>
 </html>

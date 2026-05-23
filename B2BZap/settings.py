@@ -8,7 +8,9 @@ load_dotenv(BASE_DIR / '.env')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'mudar-na-producao-123')
 
-ALLOWED_HOSTS = ['72.61.53.210', 'localhost', '127.0.0.1', 'b2bzap.duckdns.org', 'iridescently-tackless-morgan.ngrok-free.dev']
+# Lê do .env: ALLOWED_HOSTS=b2bzap.com.br,www.b2bzap.com.br,localhost
+_allowed_hosts_env = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(',') if h.strip()]
 
 # Chaves de API externas
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
@@ -80,7 +82,9 @@ WSGI_APPLICATION = 'B2BZap.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        # DB_PATH permite colocar o banco em volume Docker (/data/db.sqlite3)
+        # sem sobrescrever o código da aplicação
+        'NAME': Path(os.getenv('DB_PATH', str(BASE_DIR / 'db.sqlite3'))),
     }
 }
 
@@ -90,6 +94,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+CSRF_TRUSTED_ORIGINS = [os.getenv('SITE_URL', 'http://localhost:8000')]
 
 LANGUAGE_CODE = 'pt-br'
 TIME_ZONE = 'America/Sao_Paulo'
@@ -106,9 +112,31 @@ LOGIN_REDIRECT_URL = 'leads:campaign_list'
 LOGIN_URL = 'accounts:login'
 LOGOUT_REDIRECT_URL = 'landing_page'
 
-# Configurações de HTTPS (desativadas para teste via IP)
+# ── Segurança para produção (nginx termina SSL e passa X-Forwarded-Proto) ─────
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT = False
-    SESSION_COOKIE_SECURE = False
-    CSRF_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False        # nginx faz o redirect HTTP→HTTPS
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 3600
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {'format': '{levelname} {asctime} {module} {message}', 'style': '{'},
+    },
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler', 'formatter': 'verbose'},
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
+    },
+}

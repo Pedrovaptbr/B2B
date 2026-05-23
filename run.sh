@@ -1,13 +1,16 @@
 #!/bin/bash
+set -e
 
-# Aplica as migrações
-echo "Applying database migrations..."
+echo "==> Aplicando migrações..."
 python manage.py migrate --noinput
 
-# Coleta os estáticos
-echo "Collecting static files..."
+echo "==> Coletando arquivos estáticos..."
 python manage.py collectstatic --noinput
 
-# Inicia o servidor
-echo "Starting Gunicorn..."
-gunicorn B2BZap.wsgi:application --bind 0.0.0.0:8000
+echo "==> Iniciando Gunicorn..."
+exec gunicorn B2BZap.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers 3 \
+    --timeout 60 \
+    --access-logfile - \
+    --error-logfile -

@@ -1,13 +1,44 @@
 version: '3.8'
 
 services:
+
+  # ── App Django + Gunicorn ────────────────────────────────────────────────────
   web:
     build: .
     container_name: b2bzap_app
-    volumes:
-      - .:/app
     env_file:
       - .env
+    environment:
+      - DB_PATH=/data/db.sqlite3    # banco no volume, fora do código
     ports:
-      - "8000:8000"
-    restart: always
+      - "8000:8000"                  # acessível via IP:8000 (sem nginx por enquanto)
+    depends_on:
+      - evolution
+    restart: unless-stopped
+    volumes:
+      - sqlite_data:/data             # banco SQLite persiste aqui
+
+  # ── Evolution API (WhatsApp) ─────────────────────────────────────────────────
+  evolution:
+    image: atendai/evolution-api:latest
+    container_name: b2bzap_evolution
+    ports:
+      - "127.0.0.1:8081:8080"   # só localhost
+    environment:
+      # Chave global de autenticação — deve bater com EVOLUTION_API_KEY do .env
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-b2bkey}
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+      # Armazenamento local (sem banco externo)
+      - DATABASE_ENABLED=false
+      - STORE_MESSAGES=true
+      - STORE_MESSAGE_UP=true
+      - STORE_CONTACTS=true
+      - STORE_CHATS=true
+      - DEL_INSTANCE=false
+    volumes:
+      - evolution_store:/evolution/store
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  evolution_store:

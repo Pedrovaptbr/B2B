@@ -1,3 +1,5 @@
+scripts/
+landing-standalone/
 .venv/
 venv/
 .git/
