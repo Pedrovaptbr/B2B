@@ -636,12 +636,74 @@ def api_templates_view(request):
 @login_required
 def meu_banco_view(request):
     if request.method == 'POST':
+        action  = request.POST.get('action', 'remove_lead')
         lead_id = request.POST.get('lead_id')
-        if lead_id:
+
+        # ── Remover lead do banco ─────────────────────────────────────────────
+        if action == 'remove_lead' and lead_id:
             lead = get_object_or_404(Lead, id=lead_id, proprietarios=request.user)
             lead.proprietarios.remove(request.user)
-            messages.success(request, f'Lead "{lead.nome}" removido do seu banco.')
+            messages.success(request, f'Lead "{lead.nome}" removido do banco.')
+
+        # ── Adicionar lead a uma campanha ─────────────────────────────────────
+        elif action == 'add_to_campaign' and lead_id:
+            campanha_id = request.POST.get('campanha_id')
+            lead     = get_object_or_404(Lead, id=lead_id, proprietarios=request.user)
+            campanha = get_object_or_404(Campanha, id=campanha_id, user=request.user)
+            campanha.leads.add(lead)
+            messages.success(request, f'Lead adicionado à campanha "{campanha.nome}".')
+
+        # ── Remover lead de uma campanha ──────────────────────────────────────
+        elif action == 'remove_from_campaign' and lead_id:
+            campanha_id = request.POST.get('campanha_id')
+            lead     = get_object_or_404(Lead, id=lead_id, proprietarios=request.user)
+            campanha = get_object_or_404(Campanha, id=campanha_id, user=request.user)
+            campanha.leads.remove(lead)
+            messages.success(request, f'Lead removido da campanha "{campanha.nome}".')
+
+        # ── Adicionar lead manualmente ────────────────────────────────────────
+        elif action == 'add_manual':
+            import uuid
+            nome      = request.POST.get('nome', '').strip()
+            whatsapp  = request.POST.get('whatsapp', '').strip() or None
+            telefone  = request.POST.get('telefone', '').strip() or None
+            endereco  = request.POST.get('endereco', '').strip() or None
+            site      = request.POST.get('site', '').strip() or None
+            if nome:
+                place_id = f"manual_{request.user.id}_{uuid.uuid4().hex[:12]}"
+                lead = Lead.objects.create(
+                    place_id=place_id,
+                    nome=nome,
+                    whatsapp=whatsapp,
+                    telefone=telefone,
+                    endereco=endereco,
+                    site=site,
+                    status='Qualificado',
+                )
+                lead.proprietarios.add(request.user)
+                messages.success(request, f'Lead "{nome}" adicionado ao banco.')
+            else:
+                messages.error(request, 'Nome é obrigatório.')
+
         return redirect('leads:meu_banco')
 
-    leads = request.user.leads_adquiridos.all()
-    return render(request, 'leads/meu_banco.html', {'leads': leads})
+    # ── GET ───────────────────────────────────────────────────────────────────
+    campanhas = list(request.user.campanhas.all())
+    raw_leads = request.user.leads_adquiridos.prefetch_related('campanhas').order_by('nome')
+
+    leads_data = []
+    for lead in raw_leads:
+        associadas   = [c for c in lead.campanhas.all() if c.user == request.user]
+        assoc_ids    = {c.id for c in associadas}
+        disponiveis  = [c for c in campanhas if c.id not in assoc_ids]
+        leads_data.append({
+            'lead':         lead,
+            'associadas':   associadas,
+            'disponiveis':  disponiveis,
+        })
+
+    return render(request, 'leads/meu_banco.html', {
+        'leads_data': leads_data,
+        'campanhas':  campanhas,
+        'total':      len(leads_data),
+    })

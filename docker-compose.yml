@@ -9,7 +9,7 @@ services:
     environment:
       - DB_PATH=/data/db.sqlite3
     ports:
-      - "8000:8000"                  # acessível via IP:8000 (sem nginx por enquanto)
+      - "127.0.0.1:8000:8000"        # só localhost — nginx do host faz proxy via 443
     depends_on:
       - evolution
     restart: unless-stopped
