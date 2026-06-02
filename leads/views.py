@@ -48,6 +48,19 @@ def campaign_edit_view(request, pk):
             try:
                 campanha.nome = nome
                 campanha.mensagem_padrao = mensagem or None
+
+                # Remover anexo existente, se solicitado
+                if request.POST.get('remover_anexo') == '1' and campanha.anexo:
+                    campanha.anexo.delete(save=False)
+                    campanha.anexo = None
+
+                # Novo anexo enviado
+                novo_anexo = request.FILES.get('anexo')
+                if novo_anexo:
+                    if campanha.anexo:
+                        campanha.anexo.delete(save=False)
+                    campanha.anexo = novo_anexo
+
                 campanha.save()
                 messages.success(request, 'Campanha atualizada com sucesso!')
                 return redirect('leads:campanha_detalhes', pk=campanha.pk)
@@ -293,8 +306,8 @@ def disparar_campanha_view(request, campanha_id):
     if request.method != 'POST':
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
-    if not campanha.mensagem_padrao:
-        messages.error(request, 'Configure uma mensagem padrão antes de disparar a campanha.')
+    if not campanha.mensagem_padrao and not campanha.anexo:
+        messages.error(request, 'Configure uma mensagem padrão ou um anexo antes de disparar a campanha.')
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
     try:
@@ -316,25 +329,53 @@ def disparar_campanha_view(request, campanha_id):
         id__in=lead_ids, whatsapp__isnull=False
     ).exclude(whatsapp='')
 
+    # Prepara o anexo (catálogo) uma única vez, se configurado
+    anexo_path = campanha.anexo.path if campanha.anexo else None
+    anexo_nome = campanha.anexo_nome if campanha.anexo else None
+
     enviados, erros, inexistentes = 0, 0, 0
     for lead in leads_selecionados:
-        mensagem = campanha.mensagem_padrao.replace('[nome]', lead.nome)
-        resultado = services.send_whatsapp_message(
-            instancia.instance_name,
-            instancia.instance_token,
-            lead.whatsapp,
-            mensagem,
-        )
-        if resultado.get('success'):
+        resultado = None
+
+        # 1) Mensagem de texto (se houver)
+        if campanha.mensagem_padrao:
+            mensagem = campanha.mensagem_padrao.replace('[nome]', lead.nome)
+            resultado = services.send_whatsapp_message(
+                instancia.instance_name,
+                instancia.instance_token,
+                lead.whatsapp,
+                mensagem,
+            )
+
+        # 2) Anexo / catálogo (se houver). Pequena pausa entre texto e anexo.
+        if anexo_path:
+            # Se houve texto, evita rejeição por "número inexistente" repetida
+            if resultado is not None and not resultado.get('success'):
+                # Texto falhou — não tenta o anexo; trata o erro abaixo
+                pass
+            else:
+                if resultado is not None:
+                    time.sleep(1)
+                resultado_anexo = services.send_whatsapp_media(
+                    instancia.instance_name,
+                    instancia.instance_token,
+                    lead.whatsapp,
+                    anexo_path,
+                    file_name=anexo_nome,
+                )
+                # O resultado final considera o anexo (último envio)
+                resultado = resultado_anexo
+
+        if resultado and resultado.get('success'):
             lead.status = 'Contatado'
             lead.save()
             enviados += 1
         else:
-            erro = resultado.get('error', '')
+            erro = (resultado or {}).get('error', '')
             logger.error(f'Erro ao enviar para {lead.whatsapp}: {erro}')
 
             # 400 da Evolution API = número não existe no WhatsApp
-            if resultado.get('status_code') == 400:
+            if resultado and resultado.get('status_code') == 400:
                 lead.status = 'Telefone Inexistente'
                 lead.save()
                 inexistentes += 1

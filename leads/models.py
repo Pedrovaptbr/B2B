@@ -7,11 +7,25 @@ class Campanha(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True)
     leads = models.ManyToManyField('Lead', related_name='campanhas')
     mensagem_padrao = models.TextField(
-        blank=True, 
-        null=True, 
+        blank=True,
+        null=True,
         help_text="Mensagem padrão para ser enviada aos leads desta campanha."
     )
-    
+    anexo = models.FileField(
+        upload_to='anexos_campanhas/',
+        blank=True,
+        null=True,
+        help_text="Arquivo (ex: catálogo em PDF) enviado junto com a mensagem."
+    )
+
+    @property
+    def anexo_nome(self):
+        """Nome do arquivo do anexo, sem o caminho."""
+        if not self.anexo:
+            return None
+        import os
+        return os.path.basename(self.anexo.name)
+
     class Meta:
         unique_together = ('user', 'nome')
         ordering = ['-data_criacao']

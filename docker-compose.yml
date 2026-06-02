@@ -8,13 +8,14 @@ services:
       - .env
     environment:
       - DB_PATH=/data/db.sqlite3
+      - MEDIA_ROOT=/data/media                  # anexos (catálogos) em pasta persistente
     ports:
       - "127.0.0.1:8000:8000"        # só localhost — nginx do host faz proxy via 443
     depends_on:
       - evolution
     restart: unless-stopped
     volumes:
-      - /opt/b2bzap-data/db:/data               # banco SQLite em pasta visível
+      - /opt/b2bzap-data/db:/data               # banco SQLite + anexos (/data/media) em pasta visível
 
   # ── Evolution API (WhatsApp) ─────────────────────────────────────────────────
   evolution:

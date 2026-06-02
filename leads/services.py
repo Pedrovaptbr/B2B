@@ -1,7 +1,10 @@
-import requests
+import requests  # noqa
 from django.conf import settings
 import time
 import uuid
+import base64
+import mimetypes
+import os
 import logging
 
 log = logging.getLogger(__name__)
@@ -110,6 +113,39 @@ def send_whatsapp_message(instance_name, instance_token, number, text):
     payload = {"number": number, "textMessage": {"text": text}}
     return _evolution_request("post", f"/message/sendText/{instance_name}", headers, json=payload)
 
+def send_whatsapp_media(instance_name, instance_token, number, file_path,
+                        file_name=None, caption="", mediatype="document"):
+    """
+    Envia um arquivo (ex: catálogo PDF) via WhatsApp usando o TOKEN DA INSTÂNCIA.
+    O arquivo é lido do disco e enviado em base64 para a Evolution API (v1.5.x).
+    """
+    if not os.path.exists(file_path):
+        log.error(f"Anexo não encontrado: {file_path}")
+        return {"success": False, "error": "Arquivo de anexo não encontrado."}
+
+    file_name = file_name or os.path.basename(file_path)
+    mime_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+
+    try:
+        with open(file_path, "rb") as f:
+            media_b64 = base64.b64encode(f.read()).decode("utf-8")
+    except OSError as e:
+        log.error(f"Erro ao ler anexo {file_path}: {e}")
+        return {"success": False, "error": "Não foi possível ler o arquivo de anexo."}
+
+    headers = {"apikey": instance_token, "Content-Type": "application/json"}
+    payload = {
+        "number": number,
+        "mediaMessage": {
+            "mediatype": mediatype,
+            "fileName": file_name,
+            "mimetype": mime_type,
+            "caption": caption or "",
+            "media": media_b64,
+        },
+    }
+    return _evolution_request("post", f"/message/sendMedia/{instance_name}", headers, json=payload)
+
 def verify_whatsapp_numbers(instance_name: str, numbers: list[str]):
     """
     Verifica números de WhatsApp, contornando um bug da API que retorna JIDs corrompidos.
@@ -156,7 +192,7 @@ def verify_whatsapp_numbers(instance_name: str, numbers: list[str]):
         error_reason = f"Connection Error: {e}"
         log.error(error_reason)
         for number in numbers: results[number]['reason'] = error_reason
-    
+
     log.debug(f"Resultado final da verificação: {results}")
     log.debug("--- FIM DA VERIFICAÇÃO DE NÚMEROS ---")
     return results
