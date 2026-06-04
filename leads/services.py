@@ -114,10 +114,13 @@ def send_whatsapp_message(instance_name, instance_token, number, text):
     return _evolution_request("post", f"/message/sendText/{instance_name}", headers, json=payload)
 
 def send_whatsapp_media(instance_name, instance_token, number, file_path,
-                        file_name=None, caption="", mediatype="document"):
+                        file_name=None, caption="", mediatype=None):
     """
-    Envia um arquivo (ex: catálogo PDF) via WhatsApp usando o TOKEN DA INSTÂNCIA.
-    O arquivo é lido do disco e enviado em base64 para a Evolution API (v1.5.x).
+    Envia um arquivo (ex: catálogo PDF, imagem JPG/PNG) via WhatsApp usando o
+    TOKEN DA INSTÂNCIA. O arquivo é lido do disco e enviado em base64 para a
+    Evolution API (v1.5.x). Se mediatype não for informado, é detectado pelo
+    tipo do arquivo: imagens chegam como foto, vídeos como vídeo e o restante
+    (PDF, DOC, XLS...) como documento.
     """
     if not os.path.exists(file_path):
         log.error(f"Anexo não encontrado: {file_path}")
@@ -125,6 +128,15 @@ def send_whatsapp_media(instance_name, instance_token, number, file_path,
 
     file_name = file_name or os.path.basename(file_path)
     mime_type = mimetypes.guess_type(file_name)[0] or "application/octet-stream"
+
+    # Detecta o tipo de mídia: imagem → foto inline; vídeo → vídeo; resto → documento
+    if mediatype is None:
+        if mime_type.startswith("image/"):
+            mediatype = "image"
+        elif mime_type.startswith("video/"):
+            mediatype = "video"
+        else:
+            mediatype = "document"
 
     try:
         with open(file_path, "rb") as f:
