@@ -22,6 +22,7 @@ urlpatterns = [
 
     # Ações de Lead
     path('campanha/<int:campanha_id>/extract/<str:place_id>/', views.extract_lead_view, name='extract_lead'),
+    path('campanha/<int:campanha_id>/bulk-extract/', views.bulk_extract_leads_view, name='bulk_extract'),
     path('campanha/<int:campanha_id>/disparar/', views.disparar_campanha_view, name='disparar_campanha'),
 
     # Conversa WhatsApp por Lead

@@ -129,40 +129,59 @@ def campanha_buscar_leads_view(request, pk):
     }
 
     tipo_empresa = request.GET.get('tipo_empresa', '').strip()
-    cidade = request.GET.get('cidade', '').strip()
+    # Aceita uma ou várias cidades (dentro do mesmo estado), sem duplicatas.
+    cidades = list(dict.fromkeys(
+        c.strip() for c in request.GET.getlist('cidade') if c.strip()
+    ))
     estado = request.GET.get('estado', '').strip()
+    context['cidades_selecionadas'] = cidades
 
-    if tipo_empresa and cidade and estado:
-        query = f'{tipo_empresa} em {cidade}, {estado}, Brasil'
-        google_data = services.get_google_text_search(query)
+    if tipo_empresa and cidades and estado:
+        raw_results = []
+        seen_place_ids = set()
+        erro_busca = None
 
-        if google_data.get('status') == 'OK':
-            HistoricoBusca.objects.update_or_create(
-                user=request.user,
-                tipo_empresa=tipo_empresa,
-                cidade=cidade,
-                estado=estado,
-            )
+        for cidade in cidades:
+            query = f'{tipo_empresa} em {cidade}, {estado}, Brasil'
+            google_data = services.get_google_text_search(query)
+            status = google_data.get('status')
 
-            ids_na_campanha = set(campanha.leads.values_list('place_id', flat=True))
-            ids_extraidos = set(request.user.leads_adquiridos.values_list('place_id', flat=True))
-            leads_extraidos = {
-                l.place_id: l for l in Lead.objects.filter(place_id__in=ids_extraidos)
-            }
+            if status == 'OK':
+                HistoricoBusca.objects.update_or_create(
+                    user=request.user,
+                    tipo_empresa=tipo_empresa,
+                    cidade=cidade,
+                    estado=estado,
+                )
+                for place in google_data.get('results', []):
+                    place_id = place.get('place_id')
+                    if not place_id or place_id in seen_place_ids:
+                        continue
+                    seen_place_ids.add(place_id)
+                    place['cidade_busca'] = cidade
+                    raw_results.append(place)
+            elif status == 'ZERO_RESULTS':
+                continue
+            else:
+                erro_busca = google_data.get('error_message', 'Erro desconhecido na busca.')
 
-            results = []
-            for place in google_data.get('results', []):
-                place_id = place.get('place_id')
-                lead_existente = leads_extraidos.get(place_id)
-                place['ja_esta_na_campanha'] = place_id in ids_na_campanha
-                place['ja_foi_extraido'] = place_id in ids_extraidos
-                place['tem_whatsapp'] = bool(lead_existente and lead_existente.whatsapp)
-                results.append(place)
+        ids_na_campanha = set(campanha.leads.values_list('place_id', flat=True))
+        ids_extraidos = set(request.user.leads_adquiridos.values_list('place_id', flat=True))
+        leads_extraidos = {
+            l.place_id: l for l in Lead.objects.filter(place_id__in=ids_extraidos)
+        }
 
-            context['search_results'] = results
-        else:
-            error_msg = google_data.get('error_message', 'Erro desconhecido na busca.')
-            messages.error(request, f'Erro na busca: {error_msg}')
+        for place in raw_results:
+            place_id = place.get('place_id')
+            lead_existente = leads_extraidos.get(place_id)
+            place['ja_esta_na_campanha'] = place_id in ids_na_campanha
+            place['ja_foi_extraido'] = place_id in ids_extraidos
+            place['tem_whatsapp'] = bool(lead_existente and lead_existente.whatsapp)
+
+        context['search_results'] = raw_results
+
+        if erro_busca and not raw_results:
+            messages.error(request, f'Erro na busca: {erro_busca}')
 
     return render(request, 'leads/campanha_buscar.html', context)
 
@@ -184,6 +203,71 @@ def get_cidades_por_estado(request, uf_id):
 
 # ─── Extração de Lead ─────────────────────────────────────────────────────────
 
+def _adicionar_lead_a_campanha(user, perfil, campanha, place_id):
+    """Extrai (ou importa) um único lead para a campanha.
+
+    Deve ser chamada dentro de uma transação com o ``perfil`` bloqueado
+    (``select_for_update``). Não emite mensagens nem redireciona — apenas
+    executa a operação e devolve ``(status, lead)`` para o chamador tratar.
+
+    status ∈ {'ja_na_campanha', 'importado', 'extraido', 'sem_credito', 'erro_google'}
+    """
+    lead, criado = Lead.objects.get_or_create(
+        place_id=place_id,
+        defaults={'nome': f'Lead Provisório - {place_id}'}
+    )
+
+    if lead in campanha.leads.all():
+        return 'ja_na_campanha', lead
+
+    usuario_ja_e_proprietario = lead.proprietarios.filter(pk=user.pk).exists()
+
+    if usuario_ja_e_proprietario:
+        campanha.leads.add(lead)
+        return 'importado', lead
+
+    if perfil.creditos_disponiveis <= 0:
+        if criado:
+            lead.delete()
+        return 'sem_credito', lead
+
+    if criado or 'Lead Provisório' in lead.nome:
+        details = services.get_google_place_details(place_id)
+        if not details:
+            if criado:
+                lead.delete()
+            return 'erro_google', lead
+
+        telefone_formatado = details.get('formatted_phone_number')
+        numero_internacional = details.get('international_phone_number')
+        whatsapp_limpo = ""
+
+        if numero_internacional:
+            whatsapp_limpo = re.sub(r'\D', '', numero_internacional)
+        elif telefone_formatado:
+            numero_apenas_digitos = re.sub(r'\D', '', telefone_formatado)
+            if numero_apenas_digitos.startswith('55'):
+                whatsapp_limpo = numero_apenas_digitos
+            else:
+                whatsapp_limpo = '55' + numero_apenas_digitos
+
+        lead.nome = details.get('name', 'Nome Indisponível')
+        lead.endereco = details.get('formatted_address')
+        lead.telefone = telefone_formatado
+        lead.whatsapp = whatsapp_limpo
+        lead.site = details.get('website')
+        lead.rating = details.get('rating', 0)
+        lead.status = 'Qualificado'
+        lead.save()
+
+    perfil.creditos_disponiveis -= 1
+    perfil.total_extraido += 1
+    perfil.save()
+    lead.proprietarios.add(user)
+    campanha.leads.add(lead)
+    return 'extraido', lead
+
+
 @login_required
 @transaction.atomic
 def extract_lead_view(request, campanha_id, place_id):
@@ -191,63 +275,69 @@ def extract_lead_view(request, campanha_id, place_id):
     perfil = PerfilUsuario.objects.select_for_update().get(user=request.user)
     redirect_url = f"{reverse('leads:campanha_buscar', kwargs={'pk': campanha.id})}?{request.GET.urlencode()}"
 
-    lead, criado = Lead.objects.get_or_create(
-        place_id=place_id,
-        defaults={'nome': f'Lead Provisório - {place_id}'}
-    )
+    status, lead = _adicionar_lead_a_campanha(request.user, perfil, campanha, place_id)
 
-    if lead in campanha.leads.all():
+    if status == 'ja_na_campanha':
         messages.warning(request, f"Lead '{lead.nome}' já está nesta campanha.")
-        return redirect(redirect_url)
-
-    usuario_ja_e_proprietario = lead.proprietarios.filter(pk=request.user.pk).exists()
-
-    if not usuario_ja_e_proprietario:
-        if perfil.creditos_disponiveis <= 0:
-            messages.error(request, "Créditos insuficientes. Assine um plano para continuar extraindo leads.")
-            if criado:
-                lead.delete()
-            return redirect(redirect_url)
-
-        if criado or 'Lead Provisório' in lead.nome:
-            details = services.get_google_place_details(place_id)
-            if not details:
-                messages.error(request, "Não foi possível obter detalhes do Google.")
-                if criado:
-                    lead.delete()
-                return redirect(redirect_url)
-
-            telefone_formatado = details.get('formatted_phone_number')
-            numero_internacional = details.get('international_phone_number')
-            whatsapp_limpo = ""
-
-            if numero_internacional:
-                whatsapp_limpo = re.sub(r'\D', '', numero_internacional)
-            elif telefone_formatado:
-                numero_apenas_digitos = re.sub(r'\D', '', telefone_formatado)
-                if numero_apenas_digitos.startswith('55'):
-                    whatsapp_limpo = numero_apenas_digitos
-                else:
-                    whatsapp_limpo = '55' + numero_apenas_digitos
-
-            lead.nome = details.get('name', 'Nome Indisponível')
-            lead.endereco = details.get('formatted_address')
-            lead.telefone = telefone_formatado
-            lead.whatsapp = whatsapp_limpo
-            lead.site = details.get('website')
-            lead.rating = details.get('rating', 0)
-            lead.status = 'Qualificado'
-            lead.save()
-
-        perfil.creditos_disponiveis -= 1
-        perfil.total_extraido += 1
-        perfil.save()
-        lead.proprietarios.add(request.user)
+    elif status == 'sem_credito':
+        messages.error(request, "Créditos insuficientes. Assine um plano para continuar extraindo leads.")
+    elif status == 'erro_google':
+        messages.error(request, "Não foi possível obter detalhes do Google.")
+    elif status == 'extraido':
         messages.success(request, f"Novo lead '{lead.nome}' extraído! Créditos restantes: {perfil.creditos_disponiveis}")
-    else:
+    elif status == 'importado':
         messages.info(request, f"Lead '{lead.nome}' importado do seu cofre para a campanha (grátis).")
 
-    campanha.leads.add(lead)
+    return redirect(redirect_url)
+
+
+@login_required
+@transaction.atomic
+def bulk_extract_leads_view(request, campanha_id):
+    campanha = get_object_or_404(Campanha, id=campanha_id, user=request.user)
+    perfil = PerfilUsuario.objects.select_for_update().get(user=request.user)
+
+    next_qs = request.POST.get('next_qs', '')
+    redirect_url = reverse('leads:campanha_buscar', kwargs={'pk': campanha.id})
+    if next_qs:
+        redirect_url = f"{redirect_url}?{next_qs}"
+
+    if request.method != 'POST':
+        return redirect(redirect_url)
+
+    # Preserva a ordem e remove place_ids duplicados vindos do formulário.
+    place_ids = list(dict.fromkeys(request.POST.getlist('place_ids')))
+    if not place_ids:
+        messages.warning(request, "Nenhuma lead selecionada.")
+        return redirect(redirect_url)
+
+    contagem = {'extraido': 0, 'importado': 0, 'ja_na_campanha': 0, 'sem_credito': 0, 'erro_google': 0}
+    for place_id in place_ids:
+        status, _ = _adicionar_lead_a_campanha(request.user, perfil, campanha, place_id)
+        contagem[status] += 1
+
+    partes = []
+    if contagem['extraido']:
+        partes.append(f"{contagem['extraido']} extraída(s)")
+    if contagem['importado']:
+        partes.append(f"{contagem['importado']} importada(s) grátis")
+    if partes:
+        messages.success(
+            request,
+            f"{' e '.join(partes)} para a campanha. Créditos restantes: {perfil.creditos_disponiveis}"
+        )
+
+    if contagem['sem_credito']:
+        messages.error(
+            request,
+            f"{contagem['sem_credito']} lead(s) não extraída(s) por falta de créditos. "
+            "Assine um plano para continuar."
+        )
+    if contagem['erro_google']:
+        messages.warning(request, f"{contagem['erro_google']} lead(s) falharam ao obter detalhes do Google.")
+    if not partes and not contagem['sem_credito'] and not contagem['erro_google']:
+        messages.info(request, "As leads selecionadas já estavam na campanha.")
+
     return redirect(redirect_url)
 
 
