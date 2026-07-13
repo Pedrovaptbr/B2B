@@ -5,7 +5,7 @@ from django.dispatch import receiver
 
 class PerfilUsuario(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
-    creditos_disponiveis = models.IntegerField(default=10)
+    creditos_disponiveis = models.IntegerField(default=1)
     total_extraido = models.IntegerField(default=0)
     plano_ativo = models.BooleanField(default=False)
 
