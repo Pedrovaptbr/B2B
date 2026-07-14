@@ -28,7 +28,8 @@
     <div class="mb-6 rounded-xl border border-white/8 px-4 py-3 text-xs text-gray-500" style="background:#111;">
         <p class="font-bold text-gray-400 uppercase tracking-wider mb-1">Referência de custo</p>
         <p>Custo por crédito: <strong class="text-gray-300">R$ 0,094</strong> (não inclui hospedagem/Hostinger, que é custo fixo mensal à parte).</p>
-        <p class="mt-1">O campo "Valor total" abaixo já vem pré-calculado como <em>custo × quantidade</em> — ajuste para o preço que você quer cobrar do cliente antes de gerar o link.</p>
+        <p class="mt-1">Hostinger: <strong class="text-gray-300">R$ 15,18/mês</strong> atribuídos ao B2BZap (20% do custo total do servidor, R$ 75,90/mês — o resto é de outros projetos no mesmo host). Um único assinante Pro já cobre esse valor.</p>
+        <p class="mt-1">Preço sugerido: <strong class="text-gray-300">R$ 0,20/crédito</strong> (margem bruta de ~53%). O campo "Valor total" abaixo já vem pré-calculado com esse preço — ajuste para o valor combinado com o cliente antes de gerar o link.</p>
     </div>
 
     {% if messages %}
@@ -79,7 +80,7 @@
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Valor total (R$)</label>
             <input type="text" id="id_price" name="price" required placeholder="Ex: 149,90"
                    class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50">
-            <p class="text-xs text-gray-600 mt-1" id="price_hint">Pré-calculado pelo custo por crédito — edite para o valor combinado com o cliente.</p>
+            <p class="text-xs text-gray-600 mt-1" id="price_hint">Pré-calculado a R$0,20/crédito (~53% de margem) — edite para o valor combinado com o cliente.</p>
         </div>
 
         <button type="submit"
@@ -93,7 +94,7 @@
 
 <script>
 (function () {
-    var CREDIT_COST = 0.094;
+    var CREDIT_PRICE = 0.20; // ~53% de margem sobre o custo de R$0,094/crédito
     var creditsInput = document.getElementById('id_credits');
     var priceInput   = document.getElementById('id_price');
     var priceTouched = false;
@@ -104,7 +105,7 @@
         if (priceTouched) return;
         var credits = parseInt(creditsInput.value, 10);
         if (!credits || credits <= 0) { priceInput.value = ''; return; }
-        var suggested = (credits * CREDIT_COST).toFixed(2).replace('.', ',');
+        var suggested = (credits * CREDIT_PRICE).toFixed(2).replace('.', ',');
         priceInput.value = suggested;
     });
 })();
