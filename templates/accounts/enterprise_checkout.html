@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Enterprise — B2BZap{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+
+    {% if request.user.is_staff %}
+    <div class="mb-6 flex items-center justify-between rounded-xl border border-yellow-500/25 bg-yellow-500/10 px-4 py-2.5">
+        <span class="text-xs font-bold text-yellow-400 uppercase tracking-widest">
+            <i class="fas fa-shield-halved mr-1"></i> Admin
+        </span>
+        <a href="/admin/" target="_blank"
+           class="text-xs font-semibold text-yellow-300 hover:text-yellow-200 transition-colors">
+            Abrir interface de administração <i class="fas fa-arrow-up-right-from-square ml-1"></i>
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-white">Gerar link Enterprise</h1>
+        <p class="text-gray-500 mt-1 text-sm">
+            Ferramenta interna: informe o e-mail do cliente (já cadastrado), a quantidade de
+            créditos (mínimo {{ min_credits }}) e o valor combinado. O sistema gera um link de
+            pagamento Stripe para enviar ao cliente.
+        </p>
+    </div>
+
+    <div class="mb-6 rounded-xl border border-white/8 px-4 py-3 text-xs text-gray-500" style="background:#111;">
+        <p class="font-bold text-gray-400 uppercase tracking-wider mb-1">Referência de custo</p>
+        <p>Custo por crédito: <strong class="text-gray-300">R$ 0,094</strong> (não inclui hospedagem/Hostinger, que é custo fixo mensal à parte).</p>
+        <p class="mt-1">O campo "Valor total" abaixo já vem pré-calculado como <em>custo × quantidade</em> — ajuste para o preço que você quer cobrar do cliente antes de gerar o link.</p>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 text-sm px-4 py-3">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if checkout_url %}
+    <div class="mb-6 rounded-2xl border border-green-500/30 p-5" style="background: linear-gradient(135deg, #0d1f14, #0a1a10);">
+        <p class="text-sm text-green-400 font-semibold mb-2"><i class="fas fa-check-circle mr-1"></i>Link gerado com sucesso</p>
+        <div class="flex items-center gap-2">
+            <input type="text" readonly value="{{ checkout_url }}"
+                   class="flex-1 bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-gray-300"
+                   onclick="this.select()">
+            <a href="{{ checkout_url }}" target="_blank"
+               class="px-3 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90"
+               style="background: linear-gradient(135deg, #25D366, #128C7E);">
+                Abrir
+            </a>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Envie esse link ao cliente. Os créditos são liberados automaticamente após o pagamento.</p>
+    </div>
+    {% endif %}
+
+    <form method="post" class="rounded-2xl border border-white/8 p-6 space-y-5" style="background:#111;">
+        {% csrf_token %}
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">E-mail do cliente</label>
+            <input type="email" name="email" required placeholder="cliente@empresa.com"
+                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50">
+            <p class="text-xs text-gray-600 mt-1">O cliente precisa já ter uma conta no B2BZap.</p>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Quantidade de créditos</label>
+            <input type="number" id="id_credits" name="credits" required min="{{ min_credits }}" step="1" placeholder="{{ min_credits }}"
+                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50">
+            <p class="text-xs text-gray-600 mt-1">Mínimo de {{ min_credits }} créditos no plano Enterprise.</p>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Valor total (R$)</label>
+            <input type="text" id="id_price" name="price" required placeholder="Ex: 149,90"
+                   class="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50">
+            <p class="text-xs text-gray-600 mt-1" id="price_hint">Pré-calculado pelo custo por crédito — edite para o valor combinado com o cliente.</p>
+        </div>
+
+        <button type="submit"
+                class="w-full py-3 px-4 rounded-xl font-bold text-white hover:opacity-90 transition-opacity"
+                style="background: linear-gradient(135deg, #25D366, #128C7E);">
+            Gerar link de pagamento
+        </button>
+    </form>
+
+</div>
+
+<script>
+(function () {
+    var CREDIT_COST = 0.094;
+    var creditsInput = document.getElementById('id_credits');
+    var priceInput   = document.getElementById('id_price');
+    var priceTouched = false;
+
+    priceInput.addEventListener('input', function () { priceTouched = true; });
+
+    creditsInput.addEventListener('input', function () {
+        if (priceTouched) return;
+        var credits = parseInt(creditsInput.value, 10);
+        if (!credits || credits <= 0) { priceInput.value = ''; return; }
+        var suggested = (credits * CREDIT_COST).toFixed(2).replace('.', ',');
+        priceInput.value = suggested;
+    });
+})();
+</script>
+{% endblock %}

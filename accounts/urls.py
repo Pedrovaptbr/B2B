@@ -23,4 +23,7 @@ urlpatterns = [
     path('creditos/checkout/',       views.stripe_credits_checkout_view, name='credits_checkout'),
     path('creditos/sucesso/',        views.stripe_credits_success_view,  name='credits_success'),
 
+    # ── Stripe — plano Enterprise (interno/staff) ───────────────────────────────
+    path('admin/enterprise/',        views.enterprise_checkout_view,     name='enterprise_checkout'),
+
 ]

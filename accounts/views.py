@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import login
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.urls import reverse
 from django.http import JsonResponse, HttpResponse
@@ -377,6 +378,13 @@ def stripe_webhook_view(request):
                 PerfilUsuario.objects.filter(stripe_customer_id=customer_id).update(
                     creditos_disponiveis=F('creditos_disponiveis') + credits_amount
                 )
+        elif purchase_type == 'enterprise_credits' and payment_status == 'paid':
+            customer_id = getattr(data, 'customer', None) or data.get('customer')
+            if credits_amount > 0 and customer_id:
+                PerfilUsuario.objects.filter(stripe_customer_id=customer_id).update(
+                    creditos_disponiveis=F('creditos_disponiveis') + credits_amount,
+                    plano_ativo=True,
+                )
 
     return HttpResponse(status=200)
 
@@ -470,3 +478,82 @@ def stripe_credits_success_view(request):
         except Exception:
             pass
     return render(request, 'accounts/credits_success.html', {'credits_added': credits_added})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STRIPE — Plano Enterprise (preço e créditos negociados manualmente)
+# ══════════════════════════════════════════════════════════════════════════════
+
+ENTERPRISE_MIN_CREDITS = 200
+
+
+@user_passes_test(lambda u: u.is_staff)
+def enterprise_checkout_view(request):
+    """
+    Ferramenta interna (staff) para gerar um link de checkout Stripe com
+    quantidade de créditos e valor customizados para um cliente Enterprise.
+    O preço não vem de um Price ID fixo: é criado dinamicamente a cada link.
+    """
+    checkout_url = None
+
+    if request.method == 'POST':
+        email    = (request.POST.get('email') or '').strip().lower()
+        credits_raw = request.POST.get('credits', '')
+        price_raw   = request.POST.get('price', '')
+
+        cliente = User.objects.filter(email__iexact=email).first() if email else None
+        credits = int(credits_raw) if credits_raw.isdigit() else 0
+        try:
+            preco = float(price_raw.replace(',', '.'))
+        except ValueError:
+            preco = 0
+
+        if not cliente:
+            messages.error(request, "Nenhum usuário cadastrado com esse e-mail. O cliente precisa se registrar primeiro.")
+        elif credits < ENTERPRISE_MIN_CREDITS:
+            messages.error(request, f"O plano Enterprise exige no mínimo {ENTERPRISE_MIN_CREDITS} créditos.")
+        elif preco <= 0:
+            messages.error(request, "Informe um valor válido em R$.")
+        else:
+            perfil, _ = PerfilUsuario.objects.get_or_create(user=cliente)
+            if not perfil.stripe_customer_id:
+                customer = stripe.Customer.create(
+                    email=cliente.email,
+                    name=cliente.get_full_name() or cliente.username,
+                    metadata={'user_id': cliente.pk},
+                )
+                perfil.stripe_customer_id = customer.id
+                perfil.save(update_fields=['stripe_customer_id'])
+
+            base_url = settings.SITE_URL.rstrip('/')
+            try:
+                session = stripe.checkout.Session.create(
+                    customer=perfil.stripe_customer_id,
+                    mode='payment',
+                    line_items=[{
+                        'price_data': {
+                            'currency': 'brl',
+                            'unit_amount': int(round(preco * 100)),
+                            'product_data': {
+                                'name': f'B2BZap Enterprise — {credits} créditos',
+                            },
+                        },
+                        'quantity': 1,
+                    }],
+                    success_url=f"{base_url}/accounts/creditos/sucesso/?session_id={{CHECKOUT_SESSION_ID}}",
+                    cancel_url=f"{base_url}/accounts/planos/",
+                    locale='pt-BR',
+                    metadata={
+                        'user_id':        cliente.pk,
+                        'purchase_type':  'enterprise_credits',
+                        'credits_amount': credits,
+                    },
+                )
+                checkout_url = session.url
+            except stripe.error.StripeError as e:
+                messages.error(request, f"Erro ao gerar checkout: {e.user_message or str(e)}")
+
+    return render(request, 'accounts/enterprise_checkout.html', {
+        'checkout_url': checkout_url,
+        'min_credits': ENTERPRISE_MIN_CREDITS,
+    })
