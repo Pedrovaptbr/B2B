@@ -57,6 +57,7 @@
                       class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors resize-y"
                       placeholder="Prezados da [nome]...">{{ campanha.mensagem_padrao|default_if_none:'' }}</textarea>
             <p class="text-xs text-gray-600 mt-1">Use <strong class="text-gray-500">[nome]</strong> para substituir pelo nome do lead.</p>
+            <p class="text-xs text-gray-600 mt-1">Use <strong class="text-gray-500">{opção 1|opção 2|opção 3}</strong> para variar o texto a cada envio (ex: {Olá|Oi|Boa tarde} [nome]...). Pode adicionar quantas opções e quantos blocos {} quiser, sem limite.</p>
         </div>
 
         {# ── Anexo / Catálogo ─────────────────────────────────────────────────── #}
@@ -146,6 +147,7 @@
                           placeholder="Olá [nome], tudo bem?..."
                           class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors resize-y"></textarea>
                 <p class="text-xs text-gray-600 mt-1">Use <strong class="text-gray-500">[nome]</strong> para substituir pelo nome do lead.</p>
+            <p class="text-xs text-gray-600 mt-1">Use <strong class="text-gray-500">{opção 1|opção 2|opção 3}</strong> para variar o texto a cada envio (ex: {Olá|Oi|Boa tarde} [nome]...). Pode adicionar quantas opções e quantos blocos {} quiser, sem limite.</p>
             </div>
             <div class="flex gap-2">
                 <button type="submit"

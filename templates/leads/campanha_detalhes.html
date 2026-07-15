@@ -67,6 +67,25 @@
 </div>
 {% endif %}
 
+{# ── Banner de disparo em andamento ───────────────────────────────────────── #}
+{% if instancia.enviando_campanha %}
+<div class="rounded-xl p-4 mb-6 bg-purple-500/10 border border-purple-500/20 flex items-center gap-3">
+    <i class="fas fa-circle-notch fa-spin text-purple-400"></i>
+    <p class="text-sm text-gray-300">
+        Disparo em andamento — as mensagens estão sendo enviadas aos poucos (1 a 5 minutos entre cada).
+        Atualize a página para acompanhar o status dos leads.
+    </p>
+</div>
+{% elif instancia and instancia.envios_restantes_hoje <= 0 %}
+<div class="rounded-xl p-4 mb-6 bg-red-500/10 border border-red-500/20">
+    <p class="text-sm text-gray-300">
+        Limite diário de {{ instancia.limite_diario_envios }} envios atingido para sua instância. Novos disparos liberam amanhã.
+    </p>
+</div>
+{% elif instancia %}
+<p class="text-xs text-gray-600 mb-4">Envios restantes hoje: <strong class="text-gray-400">{{ instancia.envios_restantes_hoje }}</strong> de {{ instancia.limite_diario_envios }}</p>
+{% endif %}
+
 {# ── Lista de leads ───────────────────────────────────────────────────────── #}
 <div class="rounded-xl border border-white/8" style="background:#111;">
     {% if not leads %}
@@ -176,12 +195,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const hasMessage  = {{ campanha.mensagem_padrao|yesno:"true,false" }};
     const hasAnexo    = {{ campanha.anexo|yesno:"true,false" }};
     const podeDisparar = hasMessage || hasAnexo;
+    const bloqueadoDisparo = {% if instancia.enviando_campanha or instancia.envios_restantes_hoje <= 0 %}true{% else %}false{% endif %};
 
     function update() {
         const checked = document.querySelectorAll('.lead-checkbox:checked').length;
         countSpan.textContent = checked;
         deleteBtn.disabled   = checked === 0;
-        dispararBtn.disabled = checked === 0 || !podeDisparar;
+        dispararBtn.disabled = checked === 0 || !podeDisparar || bloqueadoDisparo;
     }
 
     selectAll.addEventListener('change', function () {

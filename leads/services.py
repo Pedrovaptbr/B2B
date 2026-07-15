@@ -5,12 +5,28 @@ import uuid
 import base64
 import mimetypes
 import os
+import re
+import random
 import logging
 
 log = logging.getLogger(__name__)
 # Ativa DEBUG só neste módulo — não polui o logger raiz do Django
 if settings.DEBUG:
     log.setLevel(logging.DEBUG)
+
+_SPINTAX_RE = re.compile(r'\{([^{}]+)\}')
+
+
+def randomizar_mensagem(texto):
+    """
+    Escolhe aleatoriamente uma das variações escritas pelo usuário no formato
+    {opção 1|opção 2|opção 3}, para que mensagens repetidas ao longo de uma
+    campanha não saiam idênticas. Texto sem esse padrão é retornado como está.
+    """
+    if not texto:
+        return texto
+    return _SPINTAX_RE.sub(lambda m: random.choice(m.group(1).split('|')).strip(), texto)
+
 
 # --- Funções da Evolution API ---
 

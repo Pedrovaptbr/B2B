@@ -6,9 +6,12 @@ from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
 from django.utils import timezone
+from datetime import timedelta
 import re
 import csv
 import time
+import random
+import threading
 import logging
 import requests
 from .models import Campanha, Lead, HistoricoBusca, TemplateMensagem
@@ -97,7 +100,12 @@ def campaign_delete_view(request, pk):
 def campanha_detalhes_view(request, pk):
     campanha = get_object_or_404(Campanha, pk=pk, user=request.user)
     leads = campanha.leads.all().order_by('-id')
-    return render(request, 'leads/campanha_detalhes.html', {'campanha': campanha, 'leads': leads})
+    instancia = WhatsappInstance.objects.filter(user=request.user).first()
+    return render(request, 'leads/campanha_detalhes.html', {
+        'campanha': campanha,
+        'leads': leads,
+        'instancia': instancia,
+    })
 
 
 # ─── Busca de Leads ───────────────────────────────────────────────────────────
@@ -389,6 +397,89 @@ def validar_contatos_view(request, pk):
 
 # ─── Disparo de Campanha ──────────────────────────────────────────────────────
 
+# Intervalo randomizado entre o envio para um lead e o próximo, em segundos
+# (1 a 5 minutos), para reduzir o risco de bloqueio do número pelo WhatsApp.
+DELAY_MIN_SEGUNDOS = 60
+DELAY_MAX_SEGUNDOS = 300
+
+
+def _disparar_em_background(campanha_id, instancia_id, lead_ids):
+    """
+    Executa o envio das mensagens em uma thread separada, com delay
+    randomizado entre cada lead e respeitando o limite diário de envios
+    da instância. Roda fora do ciclo de request/response.
+    """
+    from django.db import connections
+
+    try:
+        campanha = Campanha.objects.get(pk=campanha_id)
+        instancia = WhatsappInstance.objects.get(pk=instancia_id)
+
+        leads_selecionados = list(campanha.leads.filter(
+            id__in=lead_ids, whatsapp__isnull=False
+        ).exclude(whatsapp=''))
+
+        anexo_path = campanha.anexo.path if campanha.anexo else None
+        anexo_nome = campanha.anexo_nome if campanha.anexo else None
+
+        for i, lead in enumerate(leads_selecionados):
+            if instancia.envios_restantes_hoje() <= 0:
+                logger.warning(
+                    f'Limite diário de envios atingido para {instancia.instance_name}. '
+                    f'Disparo interrompido — {len(leads_selecionados) - i} lead(s) restante(s).'
+                )
+                break
+
+            resultado = None
+
+            if campanha.mensagem_padrao:
+                mensagem = services.randomizar_mensagem(campanha.mensagem_padrao).replace('[nome]', lead.nome)
+                resultado = services.send_whatsapp_message(
+                    instancia.instance_name,
+                    instancia.instance_token,
+                    lead.whatsapp,
+                    mensagem,
+                )
+
+            if anexo_path:
+                if resultado is not None and not resultado.get('success'):
+                    pass
+                else:
+                    if resultado is not None:
+                        time.sleep(1)
+                    resultado_anexo = services.send_whatsapp_media(
+                        instancia.instance_name,
+                        instancia.instance_token,
+                        lead.whatsapp,
+                        anexo_path,
+                        file_name=anexo_nome,
+                    )
+                    resultado = resultado_anexo
+
+            if resultado and resultado.get('success'):
+                lead.status = 'Contatado'
+                lead.save()
+            else:
+                erro = (resultado or {}).get('error', '')
+                logger.error(f'Erro ao enviar para {lead.whatsapp}: {erro}')
+                if resultado and resultado.get('status_code') == 400:
+                    lead.status = 'Telefone Inexistente'
+                    lead.save()
+
+            instancia.registrar_envio()
+
+            # Delay randomizado antes do próximo lead (não após o último)
+            if i < len(leads_selecionados) - 1:
+                time.sleep(random.uniform(DELAY_MIN_SEGUNDOS, DELAY_MAX_SEGUNDOS))
+    except Exception:
+        logger.exception(f'Erro inesperado no disparo em background da campanha {campanha_id}')
+    finally:
+        WhatsappInstance.objects.filter(pk=instancia_id).update(
+            enviando_campanha=False, disparo_iniciado_em=None
+        )
+        connections.close_all()
+
+
 @login_required
 def disparar_campanha_view(request, campanha_id):
     campanha = get_object_or_404(Campanha, pk=campanha_id, user=request.user)
@@ -410,76 +501,64 @@ def disparar_campanha_view(request, campanha_id):
         messages.error(request, 'Você não possui uma instância WhatsApp configurada.')
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
+    # Autorrecuperação: se o disparo ficou "travado" por muito mais tempo do
+    # que o pior caso plausível (ex: processo derrubado por deploy/crash no
+    # meio de uma campanha, deixando enviando_campanha=True para sempre),
+    # destrava sozinho em vez de exigir edição manual no /admin.
+    if instancia.enviando_campanha and instancia.disparo_iniciado_em:
+        limite_tempo = timedelta(seconds=instancia.limite_diario_envios * DELAY_MAX_SEGUNDOS * 1.5)
+        if timezone.now() - instancia.disparo_iniciado_em > limite_tempo:
+            logger.warning(
+                f'Disparo da instância {instancia.instance_name} travado desde '
+                f'{instancia.disparo_iniciado_em} — destravando automaticamente.'
+            )
+            WhatsappInstance.objects.filter(pk=instancia.pk).update(
+                enviando_campanha=False, disparo_iniciado_em=None
+            )
+            instancia.enviando_campanha = False
+
+    if instancia.envios_restantes_hoje() <= 0:
+        messages.error(request, f'Limite diário de {instancia.limite_diario_envios} envios já atingido. Tente novamente amanhã.')
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
     lead_ids = request.POST.getlist('lead_ids')
     if not lead_ids:
         messages.error(request, 'Nenhum lead selecionado.')
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
-    leads_selecionados = campanha.leads.filter(
+    qtd_leads = campanha.leads.filter(
         id__in=lead_ids, whatsapp__isnull=False
-    ).exclude(whatsapp='')
+    ).exclude(whatsapp='').count()
 
-    # Prepara o anexo (catálogo) uma única vez, se configurado
-    anexo_path = campanha.anexo.path if campanha.anexo else None
-    anexo_nome = campanha.anexo_nome if campanha.anexo else None
+    if not qtd_leads:
+        messages.error(request, 'Nenhum dos leads selecionados possui WhatsApp válido.')
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
 
-    enviados, erros, inexistentes = 0, 0, 0
-    for lead in leads_selecionados:
-        resultado = None
+    # Trava atômica: só inicia o disparo se formos nós a mudar
+    # enviando_campanha de False para True nesta mesma instrução SQL. Evita
+    # que um duplo clique ou duas abas simultâneas iniciem duas threads de
+    # disparo para a mesma instância.
+    travado = WhatsappInstance.objects.filter(
+        pk=instancia.pk, enviando_campanha=False
+    ).update(enviando_campanha=True, disparo_iniciado_em=timezone.now())
 
-        # 1) Mensagem de texto (se houver)
-        if campanha.mensagem_padrao:
-            mensagem = campanha.mensagem_padrao.replace('[nome]', lead.nome)
-            resultado = services.send_whatsapp_message(
-                instancia.instance_name,
-                instancia.instance_token,
-                lead.whatsapp,
-                mensagem,
-            )
+    if not travado:
+        messages.error(request, 'Já existe um disparo em andamento para sua instância. Aguarde terminar antes de iniciar outro.')
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
 
-        # 2) Anexo / catálogo (se houver). Pequena pausa entre texto e anexo.
-        if anexo_path:
-            # Se houve texto, evita rejeição por "número inexistente" repetida
-            if resultado is not None and not resultado.get('success'):
-                # Texto falhou — não tenta o anexo; trata o erro abaixo
-                pass
-            else:
-                if resultado is not None:
-                    time.sleep(1)
-                resultado_anexo = services.send_whatsapp_media(
-                    instancia.instance_name,
-                    instancia.instance_token,
-                    lead.whatsapp,
-                    anexo_path,
-                    file_name=anexo_nome,
-                )
-                # O resultado final considera o anexo (último envio)
-                resultado = resultado_anexo
+    thread = threading.Thread(
+        target=_disparar_em_background,
+        args=(campanha.pk, instancia.pk, lead_ids),
+        daemon=True,
+    )
+    thread.start()
 
-        if resultado and resultado.get('success'):
-            lead.status = 'Contatado'
-            lead.save()
-            enviados += 1
-        else:
-            erro = (resultado or {}).get('error', '')
-            logger.error(f'Erro ao enviar para {lead.whatsapp}: {erro}')
-
-            # 400 da Evolution API = número não existe no WhatsApp
-            if resultado and resultado.get('status_code') == 400:
-                lead.status = 'Telefone Inexistente'
-                lead.save()
-                inexistentes += 1
-            else:
-                erros += 1
-        time.sleep(1)
-
-    if enviados:
-        messages.success(request, f'{enviados} mensagem(ns) enviada(s) com sucesso!')
-    if inexistentes:
-        messages.warning(request, f'{inexistentes} lead(s) marcado(s) como "Telefone Inexistente" — número não está no WhatsApp.')
-    if erros:
-        messages.warning(request, f'{erros} mensagem(ns) não puderam ser enviadas.')
-
+    messages.success(
+        request,
+        f'Disparo iniciado para {qtd_leads} lead(s)! As mensagens serão enviadas aos poucos '
+        f'(1 a 5 minutos entre cada uma) para reduzir o risco de bloqueio do número. '
+        f'Atualize esta página para acompanhar o status de cada lead.'
+    )
     return redirect('leads:campanha_detalhes', pk=campanha_id)
 
 
