@@ -28,6 +28,20 @@ def randomizar_mensagem(texto):
     return _SPINTAX_RE.sub(lambda m: random.choice(m.group(1).split('|')).strip(), texto)
 
 
+def escolher_hashtag_final(texto_opcoes):
+    """
+    Escolhe aleatoriamente uma das opções de hashtag cadastradas pelo usuário
+    (uma por linha) para adicionar ao final da mensagem. Retorna string vazia
+    se não houver nenhuma opção cadastrada.
+    """
+    if not texto_opcoes:
+        return ''
+    opcoes = [linha.strip() for linha in texto_opcoes.splitlines() if linha.strip()]
+    if not opcoes:
+        return ''
+    return random.choice(opcoes)
+
+
 # --- Funções da Evolution API ---
 
 def _get_evolution_api_config():

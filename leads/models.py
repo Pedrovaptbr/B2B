@@ -17,6 +17,17 @@ class Campanha(models.Model):
         null=True,
         help_text="Arquivo (ex: catálogo em PDF) enviado junto com a mensagem."
     )
+    hashtags_finais = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Opções de hashtag para adicionar ao final da mensagem, uma por linha. Uma delas é escolhida aleatoriamente a cada envio."
+    )
+
+    @property
+    def hashtags_finais_lista(self):
+        if not self.hashtags_finais:
+            return []
+        return [linha.strip() for linha in self.hashtags_finais.splitlines() if linha.strip()]
 
     @property
     def anexo_nome(self):

@@ -52,6 +52,9 @@ def campaign_edit_view(request, pk):
                 campanha.nome = nome
                 campanha.mensagem_padrao = mensagem or None
 
+                hashtag_opcoes = [h.strip() for h in request.POST.getlist('hashtag_opcao') if h.strip()]
+                campanha.hashtags_finais = '\n'.join(hashtag_opcoes) or None
+
                 # Remover anexo existente, se solicitado
                 if request.POST.get('remover_anexo') == '1' and campanha.anexo:
                     campanha.anexo.delete(save=False)
@@ -434,6 +437,9 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
 
             if campanha.mensagem_padrao:
                 mensagem = services.randomizar_mensagem(campanha.mensagem_padrao).replace('[nome]', lead.nome)
+                hashtag = services.escolher_hashtag_final(campanha.hashtags_finais)
+                if hashtag:
+                    mensagem = f'{mensagem}\n\n{hashtag}'
                 resultado = services.send_whatsapp_message(
                     instancia.instance_name,
                     instancia.instance_token,
