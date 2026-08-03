@@ -38,4 +38,6 @@ urlpatterns = [
     # API Interna
     path('api/cidades/<int:uf_id>/', views.get_cidades_por_estado, name='api_get_cidades'),
     path('api/templates/', views.api_templates_view, name='api_templates'),
+    path('api/ia/gerar-mensagem/', views.api_ia_gerar_mensagem_view, name='api_ia_gerar_mensagem'),
+    path('api/ia/gerar-variacoes/', views.api_ia_gerar_variacoes_view, name='api_ia_gerar_variacoes'),
 ]

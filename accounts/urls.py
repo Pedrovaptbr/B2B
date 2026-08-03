@@ -9,6 +9,7 @@ urlpatterns = [
     path('', include('django.contrib.auth.urls')),
     
     path('planos/', views.planos_view, name='planos'),
+    path('perfil/', views.perfil_view, name='perfil'),
     path('whatsapp/', views.whatsapp_instance_view, name='whatsapp_instance'),
     path('whatsapp/status/', views.whatsapp_status_api_view, name='whatsapp_status_api'),
     path('whatsapp/test-send/', views.test_send_view, name='test_send'),

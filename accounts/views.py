@@ -57,6 +57,16 @@ def planos_view(request):
     return render(request, 'accounts/planos.html')
 
 @login_required
+def perfil_view(request):
+    perfil = request.user.perfil
+    if request.method == 'POST':
+        perfil.contexto_negocio = request.POST.get('contexto_negocio', '').strip()
+        perfil.save(update_fields=['contexto_negocio'])
+        messages.success(request, 'Contexto do negócio salvo com sucesso.')
+        return redirect('accounts:perfil')
+    return render(request, 'accounts/perfil.html', {'perfil': perfil})
+
+@login_required
 def whatsapp_instance_view(request):
     instance, _ = WhatsappInstance.objects.get_or_create(user=request.user, defaults={'instance_name': f"{request.user.username.lower()}_{request.user.id}"})
 

@@ -13,6 +13,7 @@ services:
       - "127.0.0.1:8000:8000"        # só localhost — nginx do host faz proxy via 443
     depends_on:
       - evolution
+      - ollama
     restart: unless-stopped
     volumes:
       - /opt/b2bzap-data/db:/data               # banco SQLite + anexos (/data/media) em pasta visível
@@ -37,3 +38,12 @@ services:
     volumes:
       - /opt/b2bzap-data/evolution:/evolution/store   # sessões WhatsApp em pasta visível
     restart: unless-stopped
+
+  # ── Ollama (IA local para geração/variação de mensagens) ─────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: b2bzap_ollama
+    restart: unless-stopped
+    volumes:
+      - /opt/b2bzap-data/ollama:/root/.ollama   # cache dos modelos baixados
+    # sem "ports": só acessível pela rede interna do compose (web -> http://ollama:11434)

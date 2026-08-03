@@ -13,12 +13,43 @@ class PerfilUsuario(models.Model):
     stripe_customer_id     = models.CharField(max_length=100, blank=True, null=True)
     stripe_subscription_id = models.CharField(max_length=100, blank=True, null=True)
 
+    # ── IA (geração/variação de mensagens) ─────────────────────────────────────
+    ia_geracoes_usadas_mes = models.IntegerField(default=0)
+    ia_mes_referencia = models.CharField(max_length=7, blank=True, null=True)  # "YYYY-MM"
+    contexto_negocio = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Breve descrição do negócio do usuário, usada como contexto para a IA gerar mensagens."
+    )
+
     def __str__(self):
         return f"Perfil de {self.user.username}"
 
     @property
     def total_leads_adquiridos(self):
         return self.user.leads_adquiridos.count()
+
+    def _resetar_ia_se_novo_mes(self):
+        from django.utils import timezone
+        mes_atual = timezone.localdate().strftime('%Y-%m')
+        if self.ia_mes_referencia != mes_atual:
+            self.ia_mes_referencia = mes_atual
+            self.ia_geracoes_usadas_mes = 0
+
+    def ia_geracoes_restantes(self):
+        from django.conf import settings
+        self._resetar_ia_se_novo_mes()
+        limite = getattr(settings, 'LIMITE_IA_GERACOES_MES', 50)
+        return max(0, limite - self.ia_geracoes_usadas_mes)
+
+    def pode_usar_ia(self):
+        return self.ia_geracoes_restantes() > 0
+
+    def consumir_ia(self):
+        """Incrementa o contador de gerações de IA do mês e persiste. Chamar só após sucesso da chamada à IA."""
+        self._resetar_ia_se_novo_mes()
+        self.ia_geracoes_usadas_mes += 1
+        self.save(update_fields=['ia_geracoes_usadas_mes', 'ia_mes_referencia'])
 
 @receiver(post_save, sender=User)
 def criar_ou_atualizar_perfil_usuario(sender, instance, created, **kwargs):

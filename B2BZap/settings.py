@@ -17,6 +17,11 @@ GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 EVOLUTION_API_URL = os.getenv('EVOLUTION_API_URL')
 EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY')
 
+# ── IA local (Ollama) — geração/variação de mensagens de campanha ────────────
+OLLAMA_URL = os.getenv('OLLAMA_URL', 'http://ollama:11434')
+OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'qwen2.5:1.5b')
+LIMITE_IA_GERACOES_MES = int(os.getenv('LIMITE_IA_GERACOES_MES', '50'))
+
 # ── Stripe ────────────────────────────────────────────────────────────────────
 STRIPE_PUBLIC_KEY  = os.getenv('STRIPE_PUBLIC_KEY', '')   # pk_live_... ou pk_test_...
 STRIPE_SECRET_KEY  = os.getenv('STRIPE_SECRET_KEY', '')   # sk_live_... ou sk_test_...

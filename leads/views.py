@@ -17,6 +17,7 @@ import requests
 from .models import Campanha, Lead, HistoricoBusca, TemplateMensagem
 from accounts.models import PerfilUsuario, WhatsappInstance
 from . import services
+from . import ai
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,7 @@ def campaign_edit_view(request, pk):
         'campanha':        campanha,
         'todos_templates': todos_templates,
         'associados_ids':  associados_ids,
+        'ia_restantes':    request.user.perfil.ia_geracoes_restantes(),
     })
 
 
@@ -867,6 +869,90 @@ def api_templates_view(request):
     # Associados primeiro, depois por nome
     resultado.sort(key=lambda x: (not x['associado'], x['nome'].lower()))
     return JsonResponse({'templates': resultado})
+
+
+# ─── IA — Geração/Variação de Mensagens ───────────────────────────────────────
+
+@login_required
+def api_ia_gerar_mensagem_view(request):
+    """AJAX — gera a mensagem padrão inteira a partir do contexto_negocio do usuário + um objetivo."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'method'}, status=405)
+
+    perfil = request.user.perfil
+    if not perfil.contexto_negocio:
+        return JsonResponse({
+            'success': False, 'error': 'sem_contexto',
+            'message': 'Cadastre o contexto do seu negócio antes de usar a IA.',
+            'redirect': reverse('accounts:perfil'),
+        })
+    if not perfil.pode_usar_ia():
+        return JsonResponse({
+            'success': False, 'error': 'quota',
+            'message': f'Você já usou suas {settings.LIMITE_IA_GERACOES_MES} gerações de IA este mês.',
+        })
+
+    import json as _json
+    try:
+        body = _json.loads(request.body)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'payload'}, status=400)
+
+    objetivo = (body.get('objetivo') or '').strip()
+    if not objetivo:
+        return JsonResponse({
+            'success': False, 'error': 'objetivo_vazio',
+            'message': 'Descreva o objetivo da mensagem.',
+        })
+
+    try:
+        mensagem = ai.gerar_mensagem_base(perfil.contexto_negocio, objetivo)
+    except ai.IAError as e:
+        return JsonResponse({'success': False, 'error': 'ia_falhou', 'message': str(e)})
+
+    perfil.consumir_ia()
+    return JsonResponse({'success': True, 'mensagem': mensagem, 'restantes': perfil.ia_geracoes_restantes()})
+
+
+@login_required
+def api_ia_gerar_variacoes_view(request):
+    """AJAX — gera N opções para compor/complementar um bloco spintax {opção1|opção2|...}."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'method'}, status=405)
+
+    perfil = request.user.perfil
+    if not perfil.pode_usar_ia():
+        return JsonResponse({
+            'success': False, 'error': 'quota',
+            'message': f'Você já usou suas {settings.LIMITE_IA_GERACOES_MES} gerações de IA este mês.',
+        })
+
+    import json as _json
+    try:
+        body = _json.loads(request.body)
+    except ValueError:
+        return JsonResponse({'success': False, 'error': 'payload'}, status=400)
+
+    trecho = (body.get('trecho') or '').strip()
+    if not trecho:
+        return JsonResponse({
+            'success': False, 'error': 'trecho_vazio',
+            'message': 'Selecione um trecho de texto para variar.',
+        })
+    contexto = (body.get('contexto') or '').strip()
+    try:
+        n = int(body.get('n', 4))
+    except (TypeError, ValueError):
+        n = 4
+    n = max(1, min(n, 8))
+
+    try:
+        opcoes = ai.gerar_variacoes_bloco(trecho, contexto, n)
+    except ai.IAError as e:
+        return JsonResponse({'success': False, 'error': 'ia_falhou', 'message': str(e)})
+
+    perfil.consumir_ia()
+    return JsonResponse({'success': True, 'opcoes': opcoes, 'restantes': perfil.ia_geracoes_restantes()})
 
 
 # ─── Meu Banco de Leads ───────────────────────────────────────────────────────
