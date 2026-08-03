@@ -400,10 +400,31 @@ def validar_contatos_view(request, pk):
 
 # ─── Disparo de Campanha ──────────────────────────────────────────────────────
 
-# Intervalo randomizado entre o envio para um lead e o próximo, em segundos
-# (1 a 5 minutos), para reduzir o risco de bloqueio do número pelo WhatsApp.
-DELAY_MIN_SEGUNDOS = 60
-DELAY_MAX_SEGUNDOS = 300
+# Intervalo entre o envio para um lead e o próximo: uma pausa "humana" de
+# base somada a um tempo proporcional ao tamanho da mensagem (como se
+# estivesse sendo digitada), ambos randomizados. O objetivo não é enviar
+# rápido — é parecer uma pessoa enviando manualmente, para reduzir o risco
+# de bloqueio do número pelo WhatsApp. Quanto tempo a campanha toda demora
+# não importa.
+DELAY_BASE_MIN_SEGUNDOS = 90      # 1,5 min
+DELAY_BASE_MAX_SEGUNDOS = 280     # ~4,7 min
+SEGUNDOS_POR_CARACTERE_MIN = 0.12
+SEGUNDOS_POR_CARACTERE_MAX = 0.25
+DELAY_MAX_SEGUNDOS = 600          # teto de segurança (10 min) mesmo p/ mensagens longas
+
+
+def _calcular_delay_natural(mensagem):
+    """
+    Soma uma pausa de base (aleatória) a um tempo proporcional ao tamanho
+    da mensagem (também aleatório, simulando digitação), limitado a um
+    teto para o intervalo não deixar de parecer natural em mensagens muito
+    longas.
+    """
+    base = random.uniform(DELAY_BASE_MIN_SEGUNDOS, DELAY_BASE_MAX_SEGUNDOS)
+    tempo_digitacao = len(mensagem or '') * random.uniform(
+        SEGUNDOS_POR_CARACTERE_MIN, SEGUNDOS_POR_CARACTERE_MAX
+    )
+    return min(base + tempo_digitacao, DELAY_MAX_SEGUNDOS)
 
 
 def _disparar_em_background(campanha_id, instancia_id, lead_ids):
@@ -434,6 +455,7 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
                 break
 
             resultado = None
+            mensagem = ''
 
             if campanha.mensagem_padrao:
                 mensagem = services.randomizar_mensagem(campanha.mensagem_padrao).replace('[nome]', lead.nome)
@@ -474,9 +496,9 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
 
             instancia.registrar_envio()
 
-            # Delay randomizado antes do próximo lead (não após o último)
+            # Delay natural antes do próximo lead (não após o último)
             if i < len(leads_selecionados) - 1:
-                time.sleep(random.uniform(DELAY_MIN_SEGUNDOS, DELAY_MAX_SEGUNDOS))
+                time.sleep(_calcular_delay_natural(mensagem))
     except Exception:
         logger.exception(f'Erro inesperado no disparo em background da campanha {campanha_id}')
     finally:

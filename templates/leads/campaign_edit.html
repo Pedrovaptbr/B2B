@@ -60,13 +60,30 @@
             <p class="text-xs text-gray-600 mt-1">Use <strong class="text-gray-500">{opção 1|opção 2|opção 3}</strong> para variar o texto a cada envio (ex: {Olá|Oi|Boa tarde} [nome]...). Pode adicionar quantas opções e quantos blocos {} quiser, sem limite.</p>
         </div>
 
+        {# ── Variações {opção1|opção2} detectadas no texto ───────────────────────── #}
+        <div class="mb-5">
+            <div class="flex items-center justify-between mb-2">
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Variações de texto (opcional)
+                </label>
+                <button type="button" id="btn-add-variacao"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-400 bg-purple-500/10 border border-purple-500/20 rounded-full hover:bg-purple-500/20 transition-colors">
+                    <i class="fas fa-plus"></i> Adicionar variação
+                </button>
+            </div>
+            <p class="text-xs text-gray-600 mb-2">
+                Cada bloco <strong class="text-gray-500">{opção 1|opção 2}</strong> digitado na mensagem acima vira um grupo editável aqui embaixo — e o que você mudar aqui volta pro texto. Uma opção de cada grupo é escolhida aleatoriamente por envio.
+            </p>
+            <div id="variacoes-lista" class="space-y-2"></div>
+        </div>
+
         {# ── Hashtags no final da mensagem ────────────────────────────────────── #}
         <div class="mb-5">
             <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                 Hashtags no final da mensagem (opcional)
             </label>
             <p class="text-xs text-gray-600 mb-2">
-                Cadastre variações de hashtag (ex: <strong class="text-gray-500">#visão perfeita</strong>, <strong class="text-gray-500">#dispare</strong>). A cada envio, uma delas é escolhida aleatoriamente e adicionada ao final da mensagem. Pode adicionar quantas quiser.
+                Cadastre variações de hashtag (ex: <strong class="text-gray-500">#visão perfeita</strong>, <strong class="text-gray-500">#dispare</strong>). A cada envio, uma delas é escolhida aleatoriamente e adicionada ao final da mensagem. Pode digitar direto na última linha da mensagem acima (ex: <strong class="text-gray-500">#tag1 #tag2</strong>) ou usar a lista abaixo — os dois ficam sincronizados.
             </p>
             <div id="hashtag-opcoes" class="space-y-2 mb-2">
                 {% for h in campanha.hashtags_finais_lista %}
@@ -283,33 +300,329 @@
     const btnUsarTemplate   = document.getElementById('btn-usar-template');
     const dropdownTemplates = document.getElementById('dropdown-templates');
     const textarea          = document.getElementById('mensagem_padrao');
+    const form              = textarea ? textarea.closest('form') : null;
 
-    // ── Hashtags no final da mensagem: adicionar/remover opções ─────────────
+    // ══════════════════════════════════════════════════════════════════════
+    // Hashtags no final da mensagem: a última linha do texto (quando só tem
+    // #palavras separadas por espaço) funciona como espelho da lista de
+    // opções abaixo — editar na caixa de texto ou na lista atualiza os dois.
+    // ══════════════════════════════════════════════════════════════════════
     const hashtagContainer = document.getElementById('hashtag-opcoes');
     const btnAddHashtag    = document.getElementById('btn-add-hashtag');
 
-    function ligarRemocaoHashtag(row) {
-        row.querySelector('.btn-remove-hashtag').addEventListener('click', () => row.remove());
+    function ultimaLinha(texto) {
+        const linhas = texto.split('\n');
+        return linhas[linhas.length - 1];
     }
 
-    function criarLinhaHashtag() {
+    function pareceLinhaDeHashtags(linha) {
+        const t = linha.trim();
+        if (!t.startsWith('#')) return false;
+        return t.split(/\s+(?=#)/).every(p => p.startsWith('#'));
+    }
+
+    function extrairHashtagsDaLinha(linha) {
+        return linha.trim().split(/\s+(?=#)/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function obterOpcoesHashtag() {
+        return Array.from(hashtagContainer.querySelectorAll('input[name="hashtag_opcao"]'))
+            .map(i => i.value.trim())
+            .filter(Boolean);
+    }
+
+    function ligarLinhaHashtag(row) {
+        row.querySelector('.btn-remove-hashtag').addEventListener('click', () => {
+            row.remove();
+            sincronizarTextareaComHashtags();
+        });
+        row.querySelector('input').addEventListener('input', sincronizarTextareaComHashtags);
+    }
+
+    function criarLinhaHashtag(valor) {
         const row = document.createElement('div');
         row.className = 'flex items-center gap-2 hashtag-row';
-        row.innerHTML =
-            '<input type="text" name="hashtag_opcao" value="" placeholder="Ex: #visão perfeita" ' +
-            'class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors">' +
-            '<button type="button" class="btn-remove-hashtag text-gray-600 hover:text-red-400 transition-colors p-1.5" title="Remover">' +
-            '<i class="fas fa-times"></i></button>';
-        ligarRemocaoHashtag(row);
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'hashtag_opcao';
+        input.value = valor || '';
+        input.placeholder = 'Ex: #visão perfeita';
+        input.className = 'flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors';
+        row.appendChild(input);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-remove-hashtag text-gray-600 hover:text-red-400 transition-colors p-1.5';
+        btn.title = 'Remover';
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+        row.appendChild(btn);
+
+        ligarLinhaHashtag(row);
         return row;
     }
 
-    if (btnAddHashtag && hashtagContainer) {
-        document.querySelectorAll('.hashtag-row').forEach(ligarRemocaoHashtag);
+    function renderizarListaHashtags(opcoes) {
+        hashtagContainer.innerHTML = '';
+        if (opcoes.length === 0) {
+            hashtagContainer.appendChild(criarLinhaHashtag(''));
+            return;
+        }
+        opcoes.forEach(op => hashtagContainer.appendChild(criarLinhaHashtag(op)));
+    }
+
+    // Textarea → lista (só reconstrói a lista quando a última linha for de hashtags)
+    function sincronizarHashtagsComTextarea() {
+        const linha = ultimaLinha(textarea.value);
+        if (!pareceLinhaDeHashtags(linha)) return;
+        renderizarListaHashtags(extrairHashtagsDaLinha(linha));
+    }
+
+    // Lista → textarea (só reescreve a última linha, nunca reconstrói a lista)
+    function sincronizarTextareaComHashtags() {
+        const opcoes    = obterOpcoesHashtag();
+        const linhas    = textarea.value.split('\n');
+        const ultima    = linhas[linhas.length - 1];
+        const novaLinha = opcoes.join(' ');
+        if (pareceLinhaDeHashtags(ultima) || ultima.trim() === '') {
+            if (novaLinha) {
+                linhas[linhas.length - 1] = novaLinha;
+            } else if (linhas.length > 1) {
+                linhas.pop();
+            } else {
+                linhas[0] = '';
+            }
+        } else if (novaLinha) {
+            linhas.push(novaLinha);
+        }
+        textarea.value = linhas.join('\n');
+    }
+
+    if (hashtagContainer && btnAddHashtag) {
+        document.querySelectorAll('.hashtag-row').forEach(ligarLinhaHashtag);
         btnAddHashtag.addEventListener('click', () => {
-            const row = criarLinhaHashtag();
+            const row = criarLinhaHashtag('');
             hashtagContainer.appendChild(row);
             row.querySelector('input').focus();
+        });
+        if (obterOpcoesHashtag().length > 0) sincronizarTextareaComHashtags();
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Variações {opção1|opção2}: cada bloco {} do texto vira um grupo
+    // editável aqui embaixo, e editar um grupo reescreve o trecho no texto.
+    // ══════════════════════════════════════════════════════════════════════
+    const variacoesContainer = document.getElementById('variacoes-lista');
+    const btnAddVariacao     = document.getElementById('btn-add-variacao');
+    const VARIACAO_RE = /\{([^{}]+)\}/g;
+
+    function extrairGrupos(texto) {
+        const grupos = [];
+        let m;
+        VARIACAO_RE.lastIndex = 0;
+        while ((m = VARIACAO_RE.exec(texto)) !== null) {
+            grupos.push({
+                opcoes: m[1].split('|').map(s => s.trim()),
+                inicio: m.index,
+                fim: m.index + m[0].length,
+            });
+        }
+        return grupos;
+    }
+
+    function contextoDoGrupo(grupo, texto) {
+        const antes = texto.slice(Math.max(0, grupo.inicio - 28), grupo.inicio).replace(/\s+/g, ' ');
+        return (grupo.inicio > 28 ? '…' : '') + antes;
+    }
+
+    function reescreverTrecho(inicio, fim, novoTrecho) {
+        const texto = textarea.value;
+        textarea.value = texto.slice(0, inicio) + novoTrecho + texto.slice(fim);
+    }
+
+    // Preserva a quantidade de opções mesmo se alguma estiver temporariamente
+    // vazia (usado durante digitação, pra não sumir a linha no meio da edição).
+    function trechoComOpcoesBrutas(opcoes) {
+        if (opcoes.length === 0) return '';
+        if (opcoes.length === 1) return opcoes[0];
+        return '{' + opcoes.join('|') + '}';
+    }
+
+    // Descarta opções vazias (usado só na limpeza final, antes de enviar o form).
+    function trechoParaOpcoes(opcoes) {
+        const limpas = opcoes.map(o => o.trim()).filter(Boolean);
+        if (limpas.length === 0) return '';
+        if (limpas.length === 1) return limpas[0];
+        return '{' + limpas.join('|') + '}';
+    }
+
+    function capturarFoco() {
+        const ativo = document.activeElement;
+        if (!ativo || !ativo.classList || !ativo.classList.contains('opcao-variacao-input')) return null;
+        const grupoEl = ativo.closest('.variacao-grupo');
+        const inputs  = Array.from(grupoEl.querySelectorAll('.opcao-variacao-input'));
+        return {
+            grupoIndex: parseInt(grupoEl.dataset.grupoIndex, 10),
+            opcaoIndex: inputs.indexOf(ativo),
+            cursorPos:  ativo.selectionStart,
+        };
+    }
+
+    function restaurarFoco(foco) {
+        if (!foco) return;
+        const grupoEl = variacoesContainer.querySelector('.variacao-grupo[data-grupo-index="' + foco.grupoIndex + '"]');
+        if (!grupoEl) return;
+        const alvo = grupoEl.querySelectorAll('.opcao-variacao-input')[foco.opcaoIndex];
+        if (!alvo) return;
+        alvo.focus();
+        try { alvo.setSelectionRange(foco.cursorPos, foco.cursorPos); } catch (e) {}
+    }
+
+    function criarLinhaOpcaoVariacao(valor, grupoIndex, opcaoIndex) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = valor;
+        input.className = 'opcao-variacao-input flex-1 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-purple-500/50 transition-colors';
+        input.addEventListener('input', () => {
+            const grupos = extrairGrupos(textarea.value);
+            const g = grupos[grupoIndex];
+            if (!g) return;
+            const brutas = Array.from(row.parentElement.querySelectorAll('.opcao-variacao-input')).map(i => i.value);
+            reescreverTrecho(g.inicio, g.fim, trechoComOpcoesBrutas(brutas));
+            renderizarVariacoes();
+        });
+        row.appendChild(input);
+
+        const btnRemover = document.createElement('button');
+        btnRemover.type = 'button';
+        btnRemover.className = 'text-gray-600 hover:text-red-400 transition-colors p-1';
+        btnRemover.innerHTML = '<i class="fas fa-times text-xs"></i>';
+        btnRemover.addEventListener('click', () => {
+            const grupos = extrairGrupos(textarea.value);
+            const g = grupos[grupoIndex];
+            if (!g) return;
+            const restantes = g.opcoes.filter((_, i) => i !== opcaoIndex);
+            reescreverTrecho(g.inicio, g.fim, trechoComOpcoesBrutas(restantes));
+            renderizarVariacoes();
+        });
+        row.appendChild(btnRemover);
+
+        return row;
+    }
+
+    function criarCardGrupo(grupo, indice, texto) {
+        const card = document.createElement('div');
+        card.className = 'variacao-grupo p-3 rounded-lg border border-white/10 bg-white/2';
+        card.dataset.grupoIndex = String(indice);
+
+        const contexto     = document.createElement('p');
+        contexto.className = 'text-xs text-gray-600 mb-2 truncate';
+        const spanContexto = document.createElement('span');
+        spanContexto.textContent = contextoDoGrupo(grupo, texto) || 'início da mensagem';
+        const spanLabel = document.createElement('span');
+        spanLabel.className = 'text-purple-400 font-semibold';
+        spanLabel.textContent = ' ← variação ' + (indice + 1);
+        contexto.appendChild(spanContexto);
+        contexto.appendChild(spanLabel);
+        card.appendChild(contexto);
+
+        const opcoesWrap = document.createElement('div');
+        opcoesWrap.className = 'space-y-1.5 mb-2';
+        grupo.opcoes.forEach((op, oi) => opcoesWrap.appendChild(criarLinhaOpcaoVariacao(op, indice, oi)));
+        card.appendChild(opcoesWrap);
+
+        const acoes = document.createElement('div');
+        acoes.className = 'flex items-center gap-3';
+
+        const btnAddOpcao = document.createElement('button');
+        btnAddOpcao.type = 'button';
+        btnAddOpcao.className = 'text-xs text-green-400/80 hover:text-green-400 transition-colors';
+        btnAddOpcao.textContent = '+ opção';
+        btnAddOpcao.addEventListener('click', () => {
+            const grupos = extrairGrupos(textarea.value);
+            const g = grupos[indice];
+            if (!g) return;
+            reescreverTrecho(g.inicio, g.fim, '{' + g.opcoes.concat(['nova opção']).join('|') + '}');
+            renderizarVariacoes();
+        });
+        acoes.appendChild(btnAddOpcao);
+
+        const btnRemoverGrupo = document.createElement('button');
+        btnRemoverGrupo.type = 'button';
+        btnRemoverGrupo.className = 'text-xs text-red-400/70 hover:text-red-400 transition-colors';
+        btnRemoverGrupo.textContent = 'Remover variação';
+        btnRemoverGrupo.addEventListener('click', () => {
+            const grupos = extrairGrupos(textarea.value);
+            const g = grupos[indice];
+            if (!g) return;
+            reescreverTrecho(g.inicio, g.fim, '');
+            renderizarVariacoes();
+        });
+        acoes.appendChild(btnRemoverGrupo);
+
+        card.appendChild(acoes);
+        return card;
+    }
+
+    function renderizarVariacoes() {
+        if (!variacoesContainer) return;
+        const foco   = capturarFoco();
+        const texto  = textarea.value;
+        const grupos = extrairGrupos(texto);
+        variacoesContainer.innerHTML = '';
+        if (grupos.length === 0) {
+            const vazio = document.createElement('p');
+            vazio.className = 'text-xs text-gray-700 italic';
+            vazio.textContent = 'Nenhuma variação no texto ainda.';
+            variacoesContainer.appendChild(vazio);
+        } else {
+            grupos.forEach((g, i) => variacoesContainer.appendChild(criarCardGrupo(g, i, texto)));
+        }
+        restaurarFoco(foco);
+    }
+
+    if (variacoesContainer && btnAddVariacao) {
+        btnAddVariacao.addEventListener('click', () => {
+            const pos = textarea.selectionStart != null ? textarea.selectionStart : textarea.value.length;
+            const insercao = '{opção 1|opção 2}';
+            reescreverTrecho(pos, pos, insercao);
+            renderizarVariacoes();
+            textarea.focus();
+            const novaPos = pos + insercao.length;
+            textarea.setSelectionRange(novaPos, novaPos);
+        });
+        renderizarVariacoes();
+    }
+
+    // Digitar direto na mensagem atualiza hashtags e variações em tempo real
+    if (textarea) {
+        textarea.addEventListener('input', () => {
+            sincronizarHashtagsComTextarea();
+            renderizarVariacoes();
+        });
+    }
+
+    // Antes de enviar: remove a linha-espelho de hashtags (já capturada pelos
+    // campos hashtag_opcao da lista) e limpa opções vazias dentro dos {}.
+    if (form && textarea) {
+        form.addEventListener('submit', () => {
+            const linhas = textarea.value.split('\n');
+            const ultima = linhas[linhas.length - 1];
+            if (pareceLinhaDeHashtags(ultima)) {
+                linhas.pop();
+                textarea.value = linhas.join('\n');
+            }
+
+            let texto  = textarea.value;
+            const grupos = extrairGrupos(texto);
+            for (let i = grupos.length - 1; i >= 0; i--) {
+                const g = grupos[i];
+                texto = texto.slice(0, g.inicio) + trechoParaOpcoes(g.opcoes) + texto.slice(g.fim);
+            }
+            textarea.value = texto;
         });
     }
 
@@ -323,6 +636,8 @@
                 textarea.value = item.dataset.texto;
                 dropdownTemplates.classList.add('hidden');
                 textarea.focus();
+                sincronizarHashtagsComTextarea();
+                renderizarVariacoes();
                 const btnSalvarTpl = document.getElementById('btn-salvar-como-template');
                 if (btnSalvarTpl) btnSalvarTpl.style.display = 'inline';
             });
