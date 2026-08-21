@@ -113,6 +113,40 @@ def _prompt_variacoes():
     return ConfiguracaoIA.atual().prompt_variacoes
 
 
+# Saudação de abertura é um conjunto pequeno e fechado — não faz sentido (e
+# não é confiável) pedir pra IA "criar" isso livremente, já rendeu palavra
+# inventada ("Olhaquiça") e despedida disfarçada de saudação ("Tchauzinho").
+# Horário (Bom dia/Boa tarde/Boa noite) fica de fora de propósito: o disparo
+# é espalhado ao longo do dia, então uma saudação presa a horário pode
+# chegar errada pro lead.
+SAUDACOES_FIXAS = ['Olá', 'Oi', 'E aí', 'Fala', 'Opa']
+
+_SYS_CLASSIFICADOR_SAUDACAO = (
+    "Você classifica se um trecho de texto é uma SAUDAÇÃO DE ABERTURA de "
+    "mensagem de WhatsApp — como 'Olá', 'Oi', 'Bom dia', 'E aí', 'Fala', "
+    "'Salve', ou qualquer variação/gíria/erro de digitação equivalente, "
+    "mesmo com pontuação junto (ex: 'Oi,'). NÃO é saudação de abertura: "
+    "despedida ('Tchau'), nome de pessoa, frase de venda, ou qualquer outra "
+    "coisa. Responda com EXATAMENTE uma palavra: 'sim' ou 'não'."
+)
+
+
+def eh_saudacao_abertura(trecho):
+    """
+    Pergunta pra IA (classificação simples, não geração livre) se `trecho`
+    é uma saudação de abertura. Mais confiável que manter uma lista fixa de
+    palavras reconhecidas tentando prever toda variação/pontuação possível.
+    Em caso de falha da IA, retorna False (cai no caminho normal de geração).
+    """
+    try:
+        resposta = _chamar_ollama(
+            f'Trecho: "{trecho}"', _SYS_CLASSIFICADOR_SAUDACAO, max_tokens=5, temperature=0.0
+        )
+    except IAError:
+        return False
+    return resposta.strip().lower().lstrip(' "\'').startswith('sim')
+
+
 def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4, contexto_depois=''):
     """
     Gera até `n` variações curtas de `trecho_original` (o conteúdo de um bloco
@@ -122,8 +156,14 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4, contexto_d
     gerar opções que combinem gramaticalmente com a frase inteira (sem isso,
     ele só via o "antes" e podia gerar uma opção com preposição/tempo verbal
     que não encaixa com o que vem depois do bloco). Nenhum dos dois é reescrito.
+    Se `trecho_original` for classificado como saudação de abertura, retorna
+    a lista fixa SAUDACOES_FIXAS em vez de gerar livremente (ver nota acima
+    da função eh_saudacao_abertura).
     Retorna list[str] com até n itens.
     """
+    if eh_saudacao_abertura(trecho_original):
+        return list(SAUDACOES_FIXAS)
+
     prompt = (
         (f'Texto ANTES do trecho (contexto, não reescrever): "{contexto_mensagem}"\n' if contexto_mensagem else '')
         + (f'Texto DEPOIS do trecho (contexto, não reescrever): "{contexto_depois}"\n' if contexto_depois else '')
