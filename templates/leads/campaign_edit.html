@@ -432,6 +432,27 @@
         return abertas > 0;
     }
 
+    // Saudação de abertura é um conjunto pequeno e fechado — não precisa (e não
+    // deve) depender de geração livre da IA, que já inventou palavra que não
+    // existe ("Olhaquiça") tentando variar isso. Detectando que o trecho é uma
+    // saudação, usamos essa lista fixa em vez de chamar o modelo. Excluímos de
+    // propósito as saudações que dependem de horário (Bom dia/Boa tarde/Boa
+    // noite) — o disparo é espalhado ao longo do dia, então uma saudação presa
+    // a um horário específico pode chegar errada pro lead.
+    const SAUDACOES_FIXAS = ['Olá', 'Oi', 'E aí', 'Fala', 'Opa'];
+    const SAUDACOES_RECONHECIDAS = [
+        'ola', 'oi', 'oii', 'oie', 'bom dia', 'boa tarde', 'boa noite',
+        'eai', 'e ai', 'fala', 'opa', 'salve', 'eaew', 'e aew',
+    ];
+
+    function normalizarTexto(t) {
+        return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+    }
+
+    function ehSaudacao(texto) {
+        return SAUDACOES_RECONHECIDAS.includes(normalizarTexto(texto));
+    }
+
     const btnIaVariacaoSelecao = document.getElementById('btn-ia-variacao-selecao');
     if (btnIaVariacaoSelecao) {
         btnIaVariacaoSelecao.addEventListener('click', async () => {
@@ -448,6 +469,11 @@
             if (dentroDeBlocoExistente(textarea.value, inicio)) {
                 erroEl.textContent = 'Esse trecho já faz parte de uma variação existente — edite as opções na lista "Variações detectadas" abaixo em vez de gerar uma nova variação aqui dentro.';
                 erroEl.classList.remove('hidden');
+                return;
+            }
+            if (ehSaudacao(trecho)) {
+                reescreverTrecho(inicio, fim, '{' + SAUDACOES_FIXAS.join('|') + '}');
+                renderizarVariacoes();
                 return;
             }
             const contexto = textarea.value.slice(Math.max(0, inicio - 28), inicio).replace(/\s+/g, ' ');
@@ -730,6 +756,15 @@
             if (!g) return;
             const trecho = (g.opcoes.find(o => o.trim()) || g.opcoes[0] || '').trim();
             if (!trecho) return;
+            if (ehSaudacao(trecho)) {
+                const jaTem = g.opcoes.map(o => normalizarTexto(o));
+                const novas = SAUDACOES_FIXAS.filter(s => !jaTem.includes(normalizarTexto(s)));
+                if (novas.length) {
+                    reescreverTrecho(g.inicio, g.fim, '{' + g.opcoes.concat(novas).join('|') + '}');
+                    renderizarVariacoes();
+                }
+                return;
+            }
             const textoOriginal = btnIaGrupo.innerHTML;
             btnIaGrupo.disabled = true;
             btnIaGrupo.innerHTML = '<i class="fas fa-spinner fa-spin"></i> gerando...';
