@@ -429,7 +429,7 @@ def _calcular_delay_natural(mensagem):
     return min(base + tempo_digitacao, DELAY_MAX_SEGUNDOS)
 
 
-def _disparar_em_background(campanha_id, instancia_id, lead_ids):
+def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensagem=None):
     """
     Executa o envio das mensagens em uma thread separada, com delay
     randomizado entre cada lead e respeitando o limite diário de envios
@@ -449,6 +449,14 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
         anexo_nome = campanha.anexo_nome if campanha.anexo else None
 
         for i, lead in enumerate(leads_selecionados):
+            instancia.refresh_from_db(fields=['cancelar_disparo'])
+            if instancia.cancelar_disparo:
+                logger.info(
+                    f'Disparo da campanha {campanha_id} cancelado pelo usuário — '
+                    f'{len(leads_selecionados) - i} lead(s) restante(s) não enviados.'
+                )
+                break
+
             if instancia.envios_restantes_hoje() <= 0:
                 logger.warning(
                     f'Limite diário de envios atingido para {instancia.instance_name}. '
@@ -460,7 +468,8 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
             mensagem = ''
 
             if campanha.mensagem_padrao:
-                mensagem = services.randomizar_mensagem(campanha.mensagem_padrao).replace('[nome]', lead.nome)
+                mensagem_base = random.choice(variacoes_mensagem) if variacoes_mensagem else campanha.mensagem_padrao
+                mensagem = services.randomizar_mensagem(mensagem_base).replace('[nome]', lead.nome)
                 hashtag = services.escolher_hashtag_final(campanha.hashtags_finais)
                 if hashtag:
                     mensagem = f'{mensagem}\n\n{hashtag}'
@@ -505,7 +514,7 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids):
         logger.exception(f'Erro inesperado no disparo em background da campanha {campanha_id}')
     finally:
         WhatsappInstance.objects.filter(pk=instancia_id).update(
-            enviando_campanha=False, disparo_iniciado_em=None
+            enviando_campanha=False, disparo_iniciado_em=None, cancelar_disparo=False
         )
         connections.close_all()
 
@@ -569,6 +578,26 @@ def disparar_campanha_view(request, campanha_id):
         messages.error(request, 'Nenhum dos leads selecionados possui WhatsApp válido.')
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
+    # Proteção automática anti-bloqueio: se a mensagem não tem spintax manual
+    # ({op1|op2}), todo lead receberia o texto idêntico — gera variações via
+    # IA uma vez aqui (não por lead) para que o disparo nunca saia com a
+    # mesma mensagem para todos. Não consome a cota mensal de IA do usuário.
+    variacoes_mensagem = []
+    if campanha.mensagem_padrao and not services.mensagem_tem_variacao(campanha.mensagem_padrao):
+        try:
+            contexto_negocio = getattr(request.user.perfil, 'contexto_negocio', '') or ''
+            geradas = ai.gerar_variacoes_mensagem(
+                campanha.mensagem_padrao, contexto_negocio=contexto_negocio, n=4
+            )
+            variacoes_mensagem = list(dict.fromkeys([campanha.mensagem_padrao] + geradas))
+        except ai.IAError:
+            messages.error(
+                request,
+                'Não foi possível gerar variações automáticas da mensagem (proteção anti-bloqueio). '
+                'Tente novamente em instantes.'
+            )
+            return redirect('leads:campanha_detalhes', pk=campanha_id)
+
     # Trava atômica: só inicia o disparo se formos nós a mudar
     # enviando_campanha de False para True nesta mesma instrução SQL. Evita
     # que um duplo clique ou duas abas simultâneas iniciem duas threads de
@@ -583,7 +612,7 @@ def disparar_campanha_view(request, campanha_id):
 
     thread = threading.Thread(
         target=_disparar_em_background,
-        args=(campanha.pk, instancia.pk, lead_ids),
+        args=(campanha.pk, instancia.pk, lead_ids, variacoes_mensagem),
         daemon=True,
     )
     thread.start()
@@ -594,6 +623,35 @@ def disparar_campanha_view(request, campanha_id):
         f'(1 a 5 minutos entre cada uma) para reduzir o risco de bloqueio do número. '
         f'Atualize esta página para acompanhar o status de cada lead.'
     )
+    return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+
+@login_required
+def cancelar_disparo_view(request, campanha_id):
+    get_object_or_404(Campanha, pk=campanha_id, user=request.user)
+
+    if request.method != 'POST':
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+    try:
+        instancia = request.user.whatsapp_instance
+    except WhatsappInstance.DoesNotExist:
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+    # Só sinaliza cancelamento se houver disparo de fato em andamento — a
+    # thread em background lê essa flag antes de cada lead e para sozinha.
+    sinalizado = WhatsappInstance.objects.filter(
+        pk=instancia.pk, enviando_campanha=True
+    ).update(cancelar_disparo=True)
+
+    if sinalizado:
+        messages.success(
+            request,
+            'Cancelamento solicitado — o disparo vai parar em instantes (após o envio em andamento).'
+        )
+    else:
+        messages.info(request, 'Não há nenhum disparo em andamento para cancelar.')
+
     return redirect('leads:campanha_detalhes', pk=campanha_id)
 
 

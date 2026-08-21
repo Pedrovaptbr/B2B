@@ -71,10 +71,18 @@
 {% if instancia.enviando_campanha %}
 <div class="rounded-xl p-4 mb-6 bg-purple-500/10 border border-purple-500/20 flex items-center gap-3">
     <i class="fas fa-circle-notch fa-spin text-purple-400"></i>
-    <p class="text-sm text-gray-300">
+    <p class="text-sm text-gray-300 flex-1">
         Disparo em andamento — as mensagens estão sendo enviadas aos poucos (1 a 5 minutos entre cada).
         Atualize a página para acompanhar o status dos leads.
     </p>
+    <form method="POST" action="{% url 'leads:cancelar_disparo' campanha_id=campanha.pk %}"
+          onsubmit="return confirm('Cancelar o disparo? Os leads que ainda não receberam mensagem ficarão sem envio.');">
+        {% csrf_token %}
+        <button type="submit"
+                class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 transition-colors">
+            <i class="fas fa-stop-circle"></i> Cancelar envio
+        </button>
+    </form>
 </div>
 {% elif instancia and instancia.envios_restantes_hoje <= 0 %}
 <div class="rounded-xl p-4 mb-6 bg-red-500/10 border border-red-500/20">

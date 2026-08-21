@@ -70,6 +70,7 @@ class WhatsappInstance(models.Model):
     envios_data = models.DateField(null=True, blank=True)
     enviando_campanha = models.BooleanField(default=False)
     disparo_iniciado_em = models.DateTimeField(null=True, blank=True)
+    cancelar_disparo = models.BooleanField(default=False)
 
     def __str__(self): return f"Instância de {self.user.username}"
 

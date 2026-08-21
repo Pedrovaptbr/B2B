@@ -80,3 +80,24 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4):
     texto = _chamar_ollama(prompt, _SYS_VARIACOES, max_tokens=300)
     linhas = [l.strip(' "—-') for l in texto.splitlines() if l.strip()]
     return linhas[:n] if linhas else [trecho_original]
+
+
+def gerar_variacoes_mensagem(mensagem, contexto_negocio='', n=4):
+    """
+    Gera até `n` variações completas de `mensagem` (a mensagem padrão inteira,
+    não um trecho isolado), preservando placeholders como [nome].
+
+    Usada como proteção automática anti-bloqueio: quando o usuário não
+    escreveu spintax manual ({op1|op2}) na campanha, o disparo chama esta
+    função uma vez (não por lead) para garantir que os leads não recebam
+    todos o texto idêntico. Não consome a cota mensal de IA do usuário —
+    é segurança da plataforma, não uma geração de conteúdo escolhida por ele.
+    """
+    prompt = (
+        (f'Contexto do negócio: "{contexto_negocio}"\n\n' if contexto_negocio else '')
+        + f'Mensagem original a variar: "{mensagem}"\n\n'
+        + f"Gere {n} variações completas dessa mensagem, uma por linha."
+    )
+    texto = _chamar_ollama(prompt, _SYS_VARIACOES, max_tokens=500)
+    linhas = [l.strip(' "—-') for l in texto.splitlines() if l.strip()]
+    return linhas[:n] if linhas else [mensagem]

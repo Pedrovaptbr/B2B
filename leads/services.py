@@ -28,6 +28,12 @@ def randomizar_mensagem(texto):
     return _SPINTAX_RE.sub(lambda m: random.choice(m.group(1).split('|')).strip(), texto)
 
 
+def mensagem_tem_variacao(texto):
+    """Indica se o texto já tem spintax manual ({op1|op2}) — usado para decidir
+    se a variação automática por IA precisa entrar em ação no disparo."""
+    return bool(texto) and bool(_SPINTAX_RE.search(texto))
+
+
 def escolher_hashtag_final(texto_opcoes):
     """
     Escolhe aleatoriamente uma das opções de hashtag cadastradas pelo usuário
