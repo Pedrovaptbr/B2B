@@ -68,7 +68,7 @@ _PADRAO_PLACEHOLDER_INVALIDO = re.compile(r'\[(?!nome\])[^\[\]]*\]', re.IGNORECA
 # qualquer candidato que comece com palavra de despedida, como rede de
 # segurança adicional à instrução do prompt.
 _PALAVRA_DESPEDIDA_INICIO = re.compile(
-    r'^\s*(tchau|até\s+logo|até\s+mais|até\s+breve|falou|flw|adeus)\b', re.IGNORECASE
+    r'^\s*(tchau\w*|até\s+logo|até\s+mais|até\s+breve|falou|flw|adeus)', re.IGNORECASE
 )
 
 

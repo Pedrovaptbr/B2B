@@ -446,7 +446,8 @@
     ];
 
     function normalizarTexto(t) {
-        return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+        return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/^[,.!?;:]+|[,.!?;:]+$/g, '').trim();
     }
 
     function ehSaudacao(texto) {
