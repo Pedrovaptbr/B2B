@@ -57,6 +57,10 @@ class ConfiguracaoIA(models.Model):
             "fornecido — nada de tempo de experiência ('há X anos', 'desde X anos'), número de "
             "telefone, canais de atendimento (chat, visita presencial, loja física) ou qualquer "
             "outro detalhe que o usuário não tenha informado. "
+            "Também não reformule nem exagere um fato do contexto de um jeito que mude o "
+            "significado dele — por exemplo, se o contexto diz 'receita tradicional italiana', "
+            "NÃO escreva que o produto 'vem da Itália' ou é 'importado'; mantenha o fato exatamente "
+            "como foi descrito, só reescrevendo o estilo da frase. "
             "Não inclua hashtags. Não invente preços ou links. "
             "Responda só com a mensagem, sem explicações, sem aspas ao redor do texto."
         ),
@@ -74,7 +78,9 @@ class ConfiguracaoIA(models.Model):
             "Nenhuma variação deve terminar com despedida ou assinatura formal (nada de "
             "'Atenciosamente', 'Att', 'Cordialmente', 'Abraços', '[Seu Nome]'). "
             "Não invente nenhum placeholder novo entre colchetes nem nenhum dado (telefone, anos de "
-            "experiência, canais de atendimento) que não esteja no trecho original. "
+            "experiência, canais de atendimento) que não esteja no trecho original. Também não "
+            "exagere nem reformule um fato de um jeito que mude o significado dele (ex: 'receita "
+            "tradicional italiana' não pode virar 'vem da Itália' ou 'importado'). "
             "Preserve exatamente qualquer placeholder entre colchetes, como [nome], se aparecer no trecho. "
             "Responda só com as variações, uma por linha, sem numeração, sem aspas, sem explicações."
         ),
