@@ -170,7 +170,12 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4, contexto_d
         + ('\n' if contexto_mensagem or contexto_depois else '')
         + f'Trecho original a variar: "{trecho_original}"\n\n'
         + f"Gere {n} variações desse trecho, uma por linha. Cada variação deve encaixar "
-        + "gramaticalmente tanto com o texto ANTES quanto com o texto DEPOIS."
+        + "gramaticalmente tanto com o texto ANTES quanto com o texto DEPOIS. "
+        + "IMPORTANTE: cada variação deve ter aproximadamente o mesmo tamanho e escopo do "
+        + "trecho original — se o trecho original é uma palavra ou frase curta, a variação "
+        + "também é; NÃO vire o trecho numa frase completa nova nem adicione ponto final "
+        + "próprio, porque ela vai ficar inserida NO MEIO da frase, entre o texto ANTES e o "
+        + "texto DEPOIS."
     )
     texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=300, temperature=0.8)
     linhas = [
