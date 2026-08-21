@@ -61,6 +61,22 @@ def _remover_assinatura(texto):
 _PADRAO_PLACEHOLDER_INVALIDO = re.compile(r'\[(?!nome\])[^\[\]]*\]', re.IGNORECASE)
 
 
+# O app nunca quer despedida em lugar nenhum da mensagem (nem no fim, nem
+# como opção de variação de uma saudação de abertura). Instruir o modelo
+# "nunca gere despedida aqui" não é suficiente — observado na prática que
+# ele às vezes devolve "Tchau" como opção de abertura mesmo assim. Filtramos
+# qualquer candidato que comece com palavra de despedida, como rede de
+# segurança adicional à instrução do prompt.
+_PALAVRA_DESPEDIDA_INICIO = re.compile(
+    r'^\s*(tchau|até\s+logo|até\s+mais|até\s+breve|falou|flw|adeus)\b', re.IGNORECASE
+)
+
+
+def _remover_despedidas(linhas):
+    """Descarta candidatos de variação que são despedida, não saudação (ver nota acima)."""
+    return [l for l in linhas if not _PALAVRA_DESPEDIDA_INICIO.match(l)]
+
+
 def _remover_placeholder_invalido(texto):
     """Remove placeholders entre colchetes inventados pela IA, exceto [nome] (ver nota acima)."""
     if not texto:
@@ -121,7 +137,7 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4, contexto_d
         _remover_placeholder_invalido(l).strip(' "—-')
         for l in texto.splitlines() if l.strip()
     ]
-    linhas = [l for l in linhas if l]
+    linhas = _remover_despedidas([l for l in linhas if l])
     return linhas[:n] if linhas else [trecho_original]
 
 
@@ -146,5 +162,5 @@ def gerar_variacoes_mensagem(mensagem, contexto_negocio='', n=4):
         _remover_placeholder_invalido(_remover_assinatura(l)).strip(' "—-')
         for l in texto.splitlines() if l.strip()
     ]
-    linhas = [l for l in linhas if l]
+    linhas = _remover_despedidas([l for l in linhas if l])
     return linhas[:n] if linhas else [mensagem]
