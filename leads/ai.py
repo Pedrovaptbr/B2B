@@ -53,6 +53,25 @@ def _remover_assinatura(texto):
     return '\n'.join(linhas).strip()
 
 
+# O único placeholder que o disparo de fato substitui é "[nome]" (ver
+# services.substituir_nome). Mesmo instruído a não inventar telefone/link/
+# preço, o modelo às vezes contorna a regra inventando um placeholder pro
+# dado que falta (ex: "[número]") — que ninguém troca, e vaza literal pra
+# mensagem enviada ao lead. Removemos qualquer colchete que não seja [nome].
+_PADRAO_PLACEHOLDER_INVALIDO = re.compile(r'\[(?!nome\])[^\[\]]*\]', re.IGNORECASE)
+
+
+def _remover_placeholder_invalido(texto):
+    """Remove placeholders entre colchetes inventados pela IA, exceto [nome] (ver nota acima)."""
+    if not texto:
+        return texto
+    texto = _PADRAO_PLACEHOLDER_INVALIDO.sub('', texto)
+    texto = re.sub(r'[ \t]+', ' ', texto)
+    texto = re.sub(r'\s+([,.!?])', r'\1', texto)
+    texto = re.sub(r'([,.!?]){2,}', r'\1', texto)
+    return texto.strip()
+
+
 def _prompt_mensagem_base():
     from .models import ConfiguracaoIA
     return ConfiguracaoIA.atual().prompt_mensagem_base
@@ -70,7 +89,7 @@ def gerar_mensagem_base(contexto_negocio, objetivo):
         "Escreva uma mensagem pronta para uso, usando [nome] onde o nome do lead entra."
     )
     texto = _chamar_ollama(prompt, _prompt_mensagem_base(), max_tokens=300, temperature=0.65)
-    return _remover_assinatura(texto)
+    return _remover_placeholder_invalido(_remover_assinatura(texto))
 
 
 def _prompt_variacoes():
@@ -92,7 +111,11 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4):
         + f"Gere {n} variações desse trecho, uma por linha."
     )
     texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=300, temperature=0.8)
-    linhas = [l.strip(' "—-') for l in texto.splitlines() if l.strip()]
+    linhas = [
+        _remover_placeholder_invalido(l).strip(' "—-')
+        for l in texto.splitlines() if l.strip()
+    ]
+    linhas = [l for l in linhas if l]
     return linhas[:n] if linhas else [trecho_original]
 
 
@@ -113,6 +136,9 @@ def gerar_variacoes_mensagem(mensagem, contexto_negocio='', n=4):
         + f"Gere {n} variações completas dessa mensagem, uma por linha."
     )
     texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=500, temperature=0.8)
-    linhas = [_remover_assinatura(l).strip(' "—-') for l in texto.splitlines() if l.strip()]
+    linhas = [
+        _remover_placeholder_invalido(_remover_assinatura(l)).strip(' "—-')
+        for l in texto.splitlines() if l.strip()
+    ]
     linhas = [l for l in linhas if l]
     return linhas[:n] if linhas else [mensagem]

@@ -53,6 +53,21 @@ def validar_spintax(texto):
     return True, None
 
 
+_PLACEHOLDER_NOME_RE = re.compile(r'\[nome\]', re.IGNORECASE)
+
+
+def substituir_nome(texto, nome):
+    """
+    Substitui o placeholder [nome] pelo nome do lead, sem diferenciar
+    maiúsculas/minúsculas — a IA às vezes gera "[Nome]" com N maiúsculo
+    (apesar da instrução pedir "[nome]" literal), e um .replace() comum
+    não bateria, deixando o placeholder literal vazar pra mensagem enviada.
+    """
+    if not texto:
+        return texto
+    return _PLACEHOLDER_NOME_RE.sub(lambda m: nome, texto)
+
+
 def escolher_hashtag_final(texto_opcoes):
     """
     Escolhe aleatoriamente uma das opções de hashtag cadastradas pelo usuário

@@ -472,7 +472,7 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensa
 
             if campanha.mensagem_padrao:
                 mensagem_base = random.choice(variacoes_mensagem) if variacoes_mensagem else campanha.mensagem_padrao
-                mensagem = services.randomizar_mensagem(mensagem_base).replace('[nome]', lead.nome)
+                mensagem = services.substituir_nome(services.randomizar_mensagem(mensagem_base), lead.nome)
                 hashtag = services.escolher_hashtag_final(campanha.hashtags_finais)
                 if hashtag:
                     mensagem = f'{mensagem}\n\n{hashtag}'
