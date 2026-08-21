@@ -35,6 +35,60 @@ class ConfiguracaoDisparo(models.Model):
         super().save(*args, **kwargs)
 
 
+class ConfiguracaoIA(models.Model):
+    """
+    Prompts de sistema (singleton) usados nas chamadas à IA local (Ollama)
+    para gerar mensagem de campanha e variações. Editáveis pelo admin sem
+    precisar de deploy, para ajustar tom/regras conforme a IA "aprende"
+    (ou erra) na prática.
+    """
+    prompt_mensagem_base = models.TextField(
+        default=(
+            "Você escreve mensagens curtas de prospecção B2B via WhatsApp em português do Brasil, "
+            "como se fosse uma pessoa real mandando um WhatsApp pra outra — nunca uma carta ou e-mail. "
+            "Regras rígidas: no máximo 4 frases curtas no total. Tom direto e natural, sem clichês de "
+            "vendas nem floreios poéticos. Sem emojis em excesso. "
+            "NUNCA termine com saudação de despedida ou assinatura — nada de 'Atenciosamente', 'Att', "
+            "'Cordialmente', 'Abraços' ou '[Seu Nome]' no final; a mensagem termina na última frase útil. "
+            "Use o placeholder literal [nome] onde o nome do lead deve entrar. "
+            "Não inclua hashtags. Não invente números de telefone, preços ou links. "
+            "Responda só com a mensagem, sem explicações, sem aspas ao redor do texto."
+        ),
+        help_text="Instrução de sistema usada ao gerar uma mensagem de campanha do zero (botão 'Gerar com IA')."
+    )
+    prompt_variacoes = models.TextField(
+        default=(
+            "Você gera variações curtas de uma frase ou mensagem em português do Brasil, para um "
+            "sistema de spintax de WhatsApp. As variações devem ter o MESMO sentido e função do "
+            "original, só mudando o texto/tom, para que as mensagens não pareçam repetidas — sempre "
+            "como se fosse uma mensagem de WhatsApp real, nunca uma carta ou e-mail. "
+            "Nenhuma variação deve terminar com despedida ou assinatura formal (nada de "
+            "'Atenciosamente', 'Att', 'Cordialmente', 'Abraços', '[Seu Nome]'). "
+            "Preserve exatamente qualquer placeholder entre colchetes, como [nome], se aparecer no trecho. "
+            "Responda só com as variações, uma por linha, sem numeração, sem aspas, sem explicações."
+        ),
+        help_text="Instrução de sistema usada ao gerar variações de mensagem (manual, ou automática no disparo)."
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração de IA'
+        verbose_name_plural = 'Configuração de IA'
+
+    def __str__(self):
+        return 'Prompts da IA'
+
+    @classmethod
+    def atual(cls):
+        """Retorna (criando se necessário) a única instância desta configuração."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
 class Campanha(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campanhas')
     nome = models.CharField(max_length=200)

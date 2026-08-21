@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Campanha, Lead, HistoricoBusca, ConfiguracaoDisparo
+from django.db import models
+from .models import Campanha, Lead, HistoricoBusca, ConfiguracaoDisparo, ConfiguracaoIA
 
 @admin.register(ConfiguracaoDisparo)
 class ConfiguracaoDisparoAdmin(admin.ModelAdmin):
@@ -19,6 +20,27 @@ class ConfiguracaoDisparoAdmin(admin.ModelAdmin):
         obj = ConfiguracaoDisparo.atual()
         from django.shortcuts import redirect
         return redirect('admin:leads_configuracaodisparo_change', obj.pk)
+
+
+@admin.register(ConfiguracaoIA)
+class ConfiguracaoIAAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'atualizado_em')
+    fields = ('prompt_mensagem_base', 'prompt_variacoes')
+    readonly_fields = ('atualizado_em',)
+    formfield_overrides = {
+        models.TextField: {'widget': admin.widgets.AdminTextareaWidget(attrs={'rows': 10, 'cols': 100})},
+    }
+
+    def has_add_permission(self, request):
+        return not ConfiguracaoIA.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        obj = ConfiguracaoIA.atual()
+        from django.shortcuts import redirect
+        return redirect('admin:leads_configuracaoia_change', obj.pk)
 
 
 @admin.register(Campanha)

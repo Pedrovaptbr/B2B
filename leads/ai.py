@@ -1,4 +1,5 @@
 import logging
+import re
 
 import requests
 from django.conf import settings
@@ -10,14 +11,14 @@ class IAError(Exception):
     """Erro amigável para exibir na UI (Ollama indisponível, resposta vazia etc)."""
 
 
-def _chamar_ollama(prompt, system, max_tokens=400):
+def _chamar_ollama(prompt, system, max_tokens=400, temperature=0.9):
     url = f"{settings.OLLAMA_URL}/api/generate"
     payload = {
         "model": settings.OLLAMA_MODEL,
         "prompt": prompt,
         "system": system,
         "stream": False,
-        "options": {"num_predict": max_tokens, "temperature": 0.9},
+        "options": {"num_predict": max_tokens, "temperature": temperature},
     }
     try:
         resp = requests.post(url, json=payload, timeout=60)
@@ -32,13 +33,29 @@ def _chamar_ollama(prompt, system, max_tokens=400):
     return texto
 
 
-_SYS_MENSAGEM_BASE = (
-    "Você escreve mensagens curtas de prospecção B2B via WhatsApp em português do Brasil. "
-    "Tom direto, natural, sem parecer spam, sem emojis em excesso, no máximo 3-4 frases. "
-    "Use o placeholder literal [nome] onde o nome do lead deve entrar. "
-    "Não inclua hashtags. Não invente números de telefone, preços ou links. "
-    "Responda só com a mensagem, sem explicações."
+# Modelos pequenos (ex: qwen2.5:1.5b) tendem a "fechar carta" mesmo quando
+# instruídos a não fazer isso — encerram com despedida/assinatura formal
+# ("Atenciosamente", "[Seu Nome]"), o que soa nada natural numa mensagem de
+# WhatsApp e chama atenção como spam. Como confiar 100% no modelo seguir a
+# instrução não é realista, removemos esse tipo de linha como rede de segurança.
+_PADRAO_ASSINATURA = re.compile(
+    r'(?im)^\s*(atenciosamente|att\.?|cordialmente|abra[cç]os?|um\s+abra[cç]o|'
+    r'grato[a]?|obrigad[oa]|[àa]\s+disposi[cç][ãa]o)\s*[,.!]?\s*$'
+    r'|^\s*\[?\s*seu\s+nome\s*\]?\s*[,.!]?\s*$'
 )
+
+
+def _remover_assinatura(texto):
+    """Remove despedida/assinatura formal do final do texto gerado (ver nota acima)."""
+    linhas = texto.splitlines()
+    while linhas and (not linhas[-1].strip() or _PADRAO_ASSINATURA.match(linhas[-1])):
+        linhas.pop()
+    return '\n'.join(linhas).strip()
+
+
+def _prompt_mensagem_base():
+    from .models import ConfiguracaoIA
+    return ConfiguracaoIA.atual().prompt_mensagem_base
 
 
 def gerar_mensagem_base(contexto_negocio, objetivo):
@@ -52,16 +69,13 @@ def gerar_mensagem_base(contexto_negocio, objetivo):
         f"Objetivo desta mensagem: {objetivo}\n\n"
         "Escreva uma mensagem pronta para uso, usando [nome] onde o nome do lead entra."
     )
-    return _chamar_ollama(prompt, _SYS_MENSAGEM_BASE, max_tokens=400)
+    texto = _chamar_ollama(prompt, _prompt_mensagem_base(), max_tokens=300, temperature=0.65)
+    return _remover_assinatura(texto)
 
 
-_SYS_VARIACOES = (
-    "Você gera variações curtas de uma frase em português do Brasil, para um sistema de "
-    "spintax de WhatsApp. As variações devem ter o MESMO sentido e função da frase original, "
-    "só mudando o texto/tom, para que as mensagens não pareçam repetidas. "
-    "Preserve exatamente qualquer placeholder entre colchetes, como [nome], se aparecer no trecho. "
-    "Responda só com as variações, uma por linha, sem numeração, sem aspas, sem explicações."
-)
+def _prompt_variacoes():
+    from .models import ConfiguracaoIA
+    return ConfiguracaoIA.atual().prompt_variacoes
 
 
 def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4):
@@ -77,7 +91,7 @@ def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4):
         + f'Trecho original a variar: "{trecho_original}"\n\n'
         + f"Gere {n} variações desse trecho, uma por linha."
     )
-    texto = _chamar_ollama(prompt, _SYS_VARIACOES, max_tokens=300)
+    texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=300, temperature=0.8)
     linhas = [l.strip(' "—-') for l in texto.splitlines() if l.strip()]
     return linhas[:n] if linhas else [trecho_original]
 
@@ -98,6 +112,7 @@ def gerar_variacoes_mensagem(mensagem, contexto_negocio='', n=4):
         + f'Mensagem original a variar: "{mensagem}"\n\n'
         + f"Gere {n} variações completas dessa mensagem, uma por linha."
     )
-    texto = _chamar_ollama(prompt, _SYS_VARIACOES, max_tokens=500)
-    linhas = [l.strip(' "—-') for l in texto.splitlines() if l.strip()]
+    texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=500, temperature=0.8)
+    linhas = [_remover_assinatura(l).strip(' "—-') for l in texto.splitlines() if l.strip()]
+    linhas = [l for l in linhas if l]
     return linhas[:n] if linhas else [mensagem]
