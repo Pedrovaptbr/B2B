@@ -61,6 +61,9 @@ class ConfiguracaoIA(models.Model):
             "significado dele — por exemplo, se o contexto diz 'receita tradicional italiana', "
             "NÃO escreva que o produto 'vem da Itália' ou é 'importado'; mantenha o fato exatamente "
             "como foi descrito, só reescrevendo o estilo da frase. "
+            "O contexto do negócio pode não incluir um nome de empresa — NUNCA tente se "
+            "apresentar como 'sou da [empresa]' ou 'somos a [empresa]' se nenhum nome foi "
+            "dado; fale direto sobre o que o negócio faz/vende, sem se apresentar por nome. "
             "Não inclua hashtags. Não invente preços ou links. "
             "Responda só com a mensagem, sem explicações, sem aspas ao redor do texto."
         ),
