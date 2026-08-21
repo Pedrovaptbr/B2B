@@ -354,8 +354,8 @@
         }
     }
 
-    async function gerarVariacoesIA(trecho, contexto, n) {
-        const data = await postIA('{% url "leads:api_ia_gerar_variacoes" %}', { trecho, contexto, n });
+    async function gerarVariacoesIA(trecho, contexto, n, contextoDepois) {
+        const data = await postIA('{% url "leads:api_ia_gerar_variacoes" %}', { trecho, contexto, n, contexto_depois: contextoDepois });
         atualizarRestantes(data.restantes);
         if (!data.success) {
             const erroEl = document.getElementById('ia-variacao-erro');
@@ -451,10 +451,11 @@
                 return;
             }
             const contexto = textarea.value.slice(Math.max(0, inicio - 28), inicio).replace(/\s+/g, ' ');
+            const contextoDepois = textarea.value.slice(fim, fim + 40).replace(/\s+/g, ' ');
             const textoOriginal = btnIaVariacaoSelecao.innerHTML;
             btnIaVariacaoSelecao.disabled = true;
             btnIaVariacaoSelecao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> gerando...';
-            const opcoes = await gerarVariacoesIA(trecho, contexto, 4);
+            const opcoes = await gerarVariacoesIA(trecho, contexto, 4, contextoDepois);
             btnIaVariacaoSelecao.disabled = false;
             btnIaVariacaoSelecao.innerHTML = textoOriginal;
             if (!opcoes) return;
@@ -596,6 +597,14 @@
         return (grupo.inicio > 28 ? '…' : '') + antes;
     }
 
+    // Texto logo depois do bloco — sem isso a IA só vê o que vem antes e pode
+    // gerar opções com preposição/tempo verbal que não encaixa com o resto
+    // da frase (ex: bloco seguido de "conhecer mais..." exige "para conhecer",
+    // não "de conhecer").
+    function contextoDepoisDoGrupo(grupo, texto) {
+        return texto.slice(grupo.fim, grupo.fim + 40).replace(/\s+/g, ' ');
+    }
+
     function reescreverTrecho(inicio, fim, novoTrecho) {
         const texto = textarea.value;
         textarea.value = texto.slice(0, inicio) + novoTrecho + texto.slice(fim);
@@ -724,7 +733,7 @@
             const textoOriginal = btnIaGrupo.innerHTML;
             btnIaGrupo.disabled = true;
             btnIaGrupo.innerHTML = '<i class="fas fa-spinner fa-spin"></i> gerando...';
-            const resultado = await gerarVariacoesIA(trecho, contextoDoGrupo(g, textarea.value), 3);
+            const resultado = await gerarVariacoesIA(trecho, contextoDoGrupo(g, textarea.value), 3, contextoDepoisDoGrupo(g, textarea.value));
             btnIaGrupo.disabled = false;
             btnIaGrupo.innerHTML = textoOriginal;
             if (!resultado) return;

@@ -97,18 +97,24 @@ def _prompt_variacoes():
     return ConfiguracaoIA.atual().prompt_variacoes
 
 
-def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4):
+def gerar_variacoes_bloco(trecho_original, contexto_mensagem='', n=4, contexto_depois=''):
     """
     Gera até `n` variações curtas de `trecho_original` (o conteúdo de um bloco
     spintax {op1|op2|...}), preservando placeholders como [nome].
-    `contexto_mensagem` é opcional: texto ao redor do bloco, só para dar contexto
-    ao modelo (não é reescrito).
+    `contexto_mensagem` é o texto ANTES do trecho e `contexto_depois` é o texto
+    DEPOIS — ambos opcionais, só para o modelo ver o que vem dos dois lados e
+    gerar opções que combinem gramaticalmente com a frase inteira (sem isso,
+    ele só via o "antes" e podia gerar uma opção com preposição/tempo verbal
+    que não encaixa com o que vem depois do bloco). Nenhum dos dois é reescrito.
     Retorna list[str] com até n itens.
     """
     prompt = (
-        (f'Contexto (texto ao redor, não reescrever): "{contexto_mensagem}"\n\n' if contexto_mensagem else '')
+        (f'Texto ANTES do trecho (contexto, não reescrever): "{contexto_mensagem}"\n' if contexto_mensagem else '')
+        + (f'Texto DEPOIS do trecho (contexto, não reescrever): "{contexto_depois}"\n' if contexto_depois else '')
+        + ('\n' if contexto_mensagem or contexto_depois else '')
         + f'Trecho original a variar: "{trecho_original}"\n\n'
-        + f"Gere {n} variações desse trecho, uma por linha."
+        + f"Gere {n} variações desse trecho, uma por linha. Cada variação deve encaixar "
+        + "gramaticalmente tanto com o texto ANTES quanto com o texto DEPOIS."
     )
     texto = _chamar_ollama(prompt, _prompt_variacoes(), max_tokens=300, temperature=0.8)
     linhas = [

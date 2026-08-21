@@ -1015,6 +1015,7 @@ def api_ia_gerar_variacoes_view(request):
             'message': 'Selecione um trecho de texto para variar.',
         })
     contexto = (body.get('contexto') or '').strip()
+    contexto_depois = (body.get('contexto_depois') or '').strip()
     try:
         n = int(body.get('n', 4))
     except (TypeError, ValueError):
@@ -1022,7 +1023,7 @@ def api_ia_gerar_variacoes_view(request):
     n = max(1, min(n, 8))
 
     try:
-        opcoes = ai.gerar_variacoes_bloco(trecho, contexto, n)
+        opcoes = ai.gerar_variacoes_bloco(trecho, contexto, n, contexto_depois=contexto_depois)
     except ai.IAError as e:
         return JsonResponse({'success': False, 'error': 'ia_falhou', 'message': str(e)})
 
