@@ -14,7 +14,7 @@ import random
 import threading
 import logging
 import requests
-from .models import Campanha, Lead, HistoricoBusca, TemplateMensagem
+from .models import Campanha, Lead, HistoricoBusca, TemplateMensagem, ConfiguracaoDisparo
 from accounts.models import PerfilUsuario, WhatsappInstance
 from . import services
 from . import ai
@@ -515,6 +515,11 @@ def disparar_campanha_view(request, campanha_id):
     campanha = get_object_or_404(Campanha, pk=campanha_id, user=request.user)
 
     if request.method != 'POST':
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+    config_disparo = ConfiguracaoDisparo.atual()
+    if config_disparo.bloqueado:
+        messages.error(request, config_disparo.mensagem_bloqueio)
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
     if not campanha.mensagem_padrao and not campanha.anexo:

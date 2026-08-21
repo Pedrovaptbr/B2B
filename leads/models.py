@@ -1,6 +1,40 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class ConfiguracaoDisparo(models.Model):
+    """
+    Trava global (singleton) que o admin pode ligar a qualquer momento para
+    impedir novos disparos de campanha em toda a plataforma — ex: enquanto
+    se investiga um bloqueio em massa pelo WhatsApp/Meta.
+    """
+    bloqueado = models.BooleanField(
+        default=False,
+        help_text="Se marcado, nenhum usuário consegue iniciar disparos de campanha."
+    )
+    mensagem_bloqueio = models.TextField(
+        default="Disparos de campanha temporariamente pausados para manutenção do sistema. Tente novamente mais tarde.",
+        help_text="Mensagem exibida ao usuário quando ele tentar disparar uma campanha com a trava ativa."
+    )
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Configuração de Disparo'
+        verbose_name_plural = 'Configuração de Disparo'
+
+    def __str__(self):
+        return 'Disparos bloqueados' if self.bloqueado else 'Disparos liberados'
+
+    @classmethod
+    def atual(cls):
+        """Retorna (criando se necessário) a única instância desta configuração."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+
 class Campanha(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campanhas')
     nome = models.CharField(max_length=200)

@@ -1,5 +1,25 @@
 from django.contrib import admin
-from .models import Campanha, Lead, HistoricoBusca
+from .models import Campanha, Lead, HistoricoBusca, ConfiguracaoDisparo
+
+@admin.register(ConfiguracaoDisparo)
+class ConfiguracaoDisparoAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'bloqueado', 'atualizado_em')
+    fields = ('bloqueado', 'mensagem_bloqueio')
+    readonly_fields = ('atualizado_em',)
+
+    def has_add_permission(self, request):
+        # Singleton: só existe um registro (pk=1), criado sob demanda.
+        return not ConfiguracaoDisparo.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def changelist_view(self, request, extra_context=None):
+        # Pula a lista e vai direto pro form de edição da instância única.
+        obj = ConfiguracaoDisparo.atual()
+        from django.shortcuts import redirect
+        return redirect('admin:leads_configuracaodisparo_change', obj.pk)
+
 
 @admin.register(Campanha)
 class CampanhaAdmin(admin.ModelAdmin):
