@@ -34,6 +34,25 @@ def mensagem_tem_variacao(texto):
     return bool(texto) and bool(_SPINTAX_RE.search(texto))
 
 
+def validar_spintax(texto):
+    """
+    Confere que todo bloco {op1|op2} está bem formado — sem aninhamento
+    ({a|{b|c}}) nem chave desbalanceada. Blocos malformados não são
+    reconhecidos por randomizar_mensagem() e vazam como texto literal
+    ("{", "}", "|" soltos) pra mensagem enviada ao lead.
+    Retorna (True, None) se ok, ou (False, mensagem de erro) se inválido.
+    """
+    if not texto:
+        return True, None
+    resto = _SPINTAX_RE.sub('', texto)
+    if '{' in resto or '}' in resto:
+        return False, (
+            'A mensagem tem uma variação { } mal formada (chaves aninhadas ou '
+            'desbalanceadas). Corrija ou remova o bloco antes de continuar.'
+        )
+    return True, None
+
+
 def escolher_hashtag_final(texto_opcoes):
     """
     Escolhe aleatoriamente uma das opções de hashtag cadastradas pelo usuário

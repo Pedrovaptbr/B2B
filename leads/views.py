@@ -48,7 +48,10 @@ def campaign_edit_view(request, pk):
     if request.method == 'POST':
         nome = request.POST.get('nome_campanha', '').strip()
         mensagem = request.POST.get('mensagem_padrao', '').strip()
-        if nome:
+        spintax_ok, spintax_erro = services.validar_spintax(mensagem)
+        if nome and not spintax_ok:
+            messages.error(request, spintax_erro)
+        elif nome:
             try:
                 campanha.nome = nome
                 campanha.mensagem_padrao = mensagem or None
@@ -533,6 +536,15 @@ def disparar_campanha_view(request, campanha_id):
 
     if not campanha.mensagem_padrao and not campanha.anexo:
         messages.error(request, 'Configure uma mensagem padrão ou um anexo antes de disparar a campanha.')
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+    # Rede de segurança: mensagem com spintax malformada (chave aninhada ou
+    # desbalanceada) não é reconhecida por randomizar_mensagem() e vazaria
+    # como "{"/"}"/"|" literais na mensagem enviada ao lead. campaign_edit_view
+    # já bloqueia isso ao salvar, mas confere de novo aqui por segurança.
+    spintax_ok, spintax_erro = services.validar_spintax(campanha.mensagem_padrao)
+    if not spintax_ok:
+        messages.error(request, spintax_erro)
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
     try:

@@ -418,6 +418,20 @@
         });
     }
 
+    // Indica se `pos` está dentro de um bloco {...} ainda não fechado até ali
+    // (conta chaves abertas menos fechadas antes da posição). Usado pra impedir
+    // gerar um bloco de variação ANINHADO dentro de outro já existente — o
+    // sistema de spintax não suporta aninhamento e o resultado vaza como
+    // "{"/"}"/"|" literais na mensagem enviada ao lead.
+    function dentroDeBlocoExistente(texto, pos) {
+        let abertas = 0;
+        for (let i = 0; i < pos; i++) {
+            if (texto[i] === '{') abertas++;
+            else if (texto[i] === '}') abertas = Math.max(0, abertas - 1);
+        }
+        return abertas > 0;
+    }
+
     const btnIaVariacaoSelecao = document.getElementById('btn-ia-variacao-selecao');
     if (btnIaVariacaoSelecao) {
         btnIaVariacaoSelecao.addEventListener('click', async () => {
@@ -428,6 +442,11 @@
             const trecho = textarea.value.slice(inicio, fim).trim();
             if (!trecho) {
                 erroEl.textContent = 'Selecione um trecho de texto na mensagem acima para gerar uma variação.';
+                erroEl.classList.remove('hidden');
+                return;
+            }
+            if (dentroDeBlocoExistente(textarea.value, inicio)) {
+                erroEl.textContent = 'Esse trecho já faz parte de uma variação existente — edite as opções na lista "Variações detectadas" abaixo em vez de gerar uma nova variação aqui dentro.';
                 erroEl.classList.remove('hidden');
                 return;
             }
