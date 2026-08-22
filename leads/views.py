@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction, IntegrityError
+from django.db.models import F
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings
@@ -220,13 +221,13 @@ def get_cidades_por_estado(request, uf_id):
 # ─── Extração de Lead ─────────────────────────────────────────────────────────
 
 def _adicionar_lead_a_campanha(user, perfil, campanha, place_id):
-    """Extrai (ou importa) um único lead para a campanha.
+    """Extrai (ou importa) um único lead para a campanha. Extração é gratuita
+    — o custo em créditos passou a ser no disparo (por envio), não aqui.
 
-    Deve ser chamada dentro de uma transação com o ``perfil`` bloqueado
-    (``select_for_update``). Não emite mensagens nem redireciona — apenas
-    executa a operação e devolve ``(status, lead)`` para o chamador tratar.
+    Não emite mensagens nem redireciona — apenas executa a operação e devolve
+    ``(status, lead)`` para o chamador tratar.
 
-    status ∈ {'ja_na_campanha', 'importado', 'extraido', 'sem_credito', 'erro_google'}
+    status ∈ {'ja_na_campanha', 'importado', 'extraido', 'erro_google'}
     """
     lead, criado = Lead.objects.get_or_create(
         place_id=place_id,
@@ -241,11 +242,6 @@ def _adicionar_lead_a_campanha(user, perfil, campanha, place_id):
     if usuario_ja_e_proprietario:
         campanha.leads.add(lead)
         return 'importado', lead
-
-    if perfil.creditos_disponiveis <= 0:
-        if criado:
-            lead.delete()
-        return 'sem_credito', lead
 
     if criado or 'Lead Provisório' in lead.nome:
         details = services.get_google_place_details(place_id)
@@ -276,7 +272,6 @@ def _adicionar_lead_a_campanha(user, perfil, campanha, place_id):
         lead.status = 'Qualificado'
         lead.save()
 
-    perfil.creditos_disponiveis -= 1
     perfil.total_extraido += 1
     perfil.save()
     lead.proprietarios.add(user)
@@ -295,14 +290,12 @@ def extract_lead_view(request, campanha_id, place_id):
 
     if status == 'ja_na_campanha':
         messages.warning(request, f"Lead '{lead.nome}' já está nesta campanha.")
-    elif status == 'sem_credito':
-        messages.error(request, "Créditos insuficientes. Assine um plano para continuar extraindo leads.")
     elif status == 'erro_google':
         messages.error(request, "Não foi possível obter detalhes do Google.")
     elif status == 'extraido':
-        messages.success(request, f"Novo lead '{lead.nome}' extraído! Créditos restantes: {perfil.creditos_disponiveis}")
+        messages.success(request, f"Novo lead '{lead.nome}' extraído!")
     elif status == 'importado':
-        messages.info(request, f"Lead '{lead.nome}' importado do seu cofre para a campanha (grátis).")
+        messages.info(request, f"Lead '{lead.nome}' importado do seu cofre para a campanha.")
 
     return redirect(redirect_url)
 
@@ -327,7 +320,7 @@ def bulk_extract_leads_view(request, campanha_id):
         messages.warning(request, "Nenhuma lead selecionada.")
         return redirect(redirect_url)
 
-    contagem = {'extraido': 0, 'importado': 0, 'ja_na_campanha': 0, 'sem_credito': 0, 'erro_google': 0}
+    contagem = {'extraido': 0, 'importado': 0, 'ja_na_campanha': 0, 'erro_google': 0}
     for place_id in place_ids:
         status, _ = _adicionar_lead_a_campanha(request.user, perfil, campanha, place_id)
         contagem[status] += 1
@@ -336,22 +329,13 @@ def bulk_extract_leads_view(request, campanha_id):
     if contagem['extraido']:
         partes.append(f"{contagem['extraido']} extraída(s)")
     if contagem['importado']:
-        partes.append(f"{contagem['importado']} importada(s) grátis")
+        partes.append(f"{contagem['importado']} importada(s)")
     if partes:
-        messages.success(
-            request,
-            f"{' e '.join(partes)} para a campanha. Créditos restantes: {perfil.creditos_disponiveis}"
-        )
+        messages.success(request, f"{' e '.join(partes)} para a campanha.")
 
-    if contagem['sem_credito']:
-        messages.error(
-            request,
-            f"{contagem['sem_credito']} lead(s) não extraída(s) por falta de créditos. "
-            "Assine um plano para continuar."
-        )
     if contagem['erro_google']:
         messages.warning(request, f"{contagem['erro_google']} lead(s) falharam ao obter detalhes do Google.")
-    if not partes and not contagem['sem_credito'] and not contagem['erro_google']:
+    if not partes and not contagem['erro_google']:
         messages.info(request, "As leads selecionadas já estavam na campanha.")
 
     return redirect(redirect_url)
@@ -448,6 +432,7 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensa
     try:
         campanha = Campanha.objects.get(pk=campanha_id)
         instancia = WhatsappInstance.objects.get(pk=instancia_id)
+        perfil = PerfilUsuario.objects.get(user=campanha.user)
 
         leads_selecionados = list(campanha.leads.filter(
             id__in=lead_ids, whatsapp__isnull=False
@@ -468,6 +453,14 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensa
             if instancia.envios_restantes_hoje() <= 0:
                 logger.warning(
                     f'Limite diário de envios atingido para {instancia.instance_name}. '
+                    f'Disparo interrompido — {len(leads_selecionados) - i} lead(s) restante(s).'
+                )
+                break
+
+            perfil.refresh_from_db(fields=['creditos_disponiveis'])
+            if perfil.creditos_disponiveis <= 0:
+                logger.warning(
+                    f'Créditos esgotados para {campanha.user.username}. '
                     f'Disparo interrompido — {len(leads_selecionados) - i} lead(s) restante(s).'
                 )
                 break
@@ -514,6 +507,13 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensa
                     lead.save()
 
             instancia.registrar_envio()
+            # Update atômico direto no banco (F()) em vez de perfil.save():
+            # essa thread roda em paralelo ao resto do app, e um F() evita
+            # sobrescrever uma compra de crédito que tenha acontecido nesse
+            # meio-tempo (webhook do Stripe, por exemplo).
+            PerfilUsuario.objects.filter(pk=perfil.pk).update(
+                creditos_disponiveis=F('creditos_disponiveis') - 1
+            )
 
             # Delay natural antes do próximo lead (não após o último)
             if i < len(leads_selecionados) - 1:
@@ -608,6 +608,17 @@ def disparar_campanha_view(request, campanha_id):
 
     if not qtd_leads:
         messages.error(request, 'Nenhum dos leads selecionados possui WhatsApp válido.')
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
+    # Cobrança é por envio, não por extração — 1 crédito por lead que
+    # efetivamente recebe mensagem. Só bloqueia aqui se já estiver zerado;
+    # se acabar no meio do disparo, o loop em background para sozinho
+    # (mesmo padrão do limite diário de envios).
+    if request.user.perfil.creditos_disponiveis <= 0:
+        messages.error(
+            request,
+            'Você não tem créditos disponíveis. Adicione créditos para poder disparar mensagens.'
+        )
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
     # Proteção automática anti-bloqueio: se a mensagem não tem spintax manual
