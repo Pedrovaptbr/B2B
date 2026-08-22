@@ -406,6 +406,59 @@ DELAY_MAX_SEGUNDOS = 600          # teto de segurança (10 min) mesmo p/ mensage
 # sempre, reproduzindo o padrão repetitivo que a exigência existe pra evitar.
 HASHTAGS_MINIMAS = 3
 
+# Janela de horário em que é permitido enviar mensagens (horário local,
+# America/Sao_Paulo). Envio fora desse intervalo é mais um padrão que foge
+# do comportamento humano e aumenta o risco de bloqueio do número — o
+# disparo pausa automaticamente fora da janela e retoma sozinho quando ela
+# reabre, em vez de simplesmente não enviar.
+HORARIO_COMERCIAL_INICIO = 8   # 08h
+HORARIO_COMERCIAL_FIM = 20     # até 19h59
+
+# Tempo máximo que a pausa de horário comercial dorme de uma vez, para
+# continuar verificando cancelamento do disparo nesse meio-tempo em vez de
+# ficar travado num único sleep() de várias horas.
+ESPERA_MAXIMA_HORARIO_COMERCIAL_SEGUNDOS = 1800  # 30 min
+
+
+def _dentro_do_horario_comercial(agora):
+    return HORARIO_COMERCIAL_INICIO <= agora.hour < HORARIO_COMERCIAL_FIM
+
+
+def _proximo_inicio_horario_comercial(agora):
+    inicio_hoje = agora.replace(hour=HORARIO_COMERCIAL_INICIO, minute=0, second=0, microsecond=0)
+    if agora.hour < HORARIO_COMERCIAL_INICIO:
+        return inicio_hoje
+    return inicio_hoje + timedelta(days=1)
+
+
+def _aguardar_horario_comercial(instancia_id):
+    """
+    Se o horário atual estiver fora da janela comercial, dorme até ela
+    reabrir, verificando periodicamente se o disparo foi cancelado nesse
+    meio-tempo. Retorna False se foi cancelado durante a espera (o chamador
+    deve interromper o disparo); True assim que a janela está aberta.
+    """
+    avisado = False
+    while True:
+        agora = timezone.localtime()
+        if _dentro_do_horario_comercial(agora):
+            return True
+
+        instancia = WhatsappInstance.objects.filter(pk=instancia_id).only('cancelar_disparo').first()
+        if instancia is None or instancia.cancelar_disparo:
+            return False
+
+        proximo_inicio = _proximo_inicio_horario_comercial(agora)
+        if not avisado:
+            logger.info(
+                f'Fora do horário comercial ({HORARIO_COMERCIAL_INICIO}h-{HORARIO_COMERCIAL_FIM}h) — '
+                f'disparo da instância {instancia_id} pausado até {proximo_inicio}.'
+            )
+            avisado = True
+
+        espera = min((proximo_inicio - agora).total_seconds(), ESPERA_MAXIMA_HORARIO_COMERCIAL_SEGUNDOS)
+        time.sleep(max(espera, 1))
+
 
 def _calcular_delay_natural(mensagem):
     """
@@ -454,6 +507,13 @@ def _disparar_em_background(campanha_id, instancia_id, lead_ids, variacoes_mensa
                 logger.warning(
                     f'Limite diário de envios atingido para {instancia.instance_name}. '
                     f'Disparo interrompido — {len(leads_selecionados) - i} lead(s) restante(s).'
+                )
+                break
+
+            if not _aguardar_horario_comercial(instancia_id):
+                logger.info(
+                    f'Disparo da campanha {campanha_id} cancelado durante a pausa de horário '
+                    f'comercial — {len(leads_selecionados) - i} lead(s) restante(s) não enviados.'
                 )
                 break
 
@@ -580,9 +640,16 @@ def disparar_campanha_view(request, campanha_id):
     # Autorrecuperação: se o disparo ficou "travado" por muito mais tempo do
     # que o pior caso plausível (ex: processo derrubado por deploy/crash no
     # meio de uma campanha, deixando enviando_campanha=True para sempre),
-    # destrava sozinho em vez de exigir edição manual no /admin.
+    # destrava sozinho em vez de exigir edição manual no /admin. O pior caso
+    # inclui uma pausa noturna inteira de horário comercial (o disparo pode
+    # legitimamente ficar dormindo até ~12h esperando a janela reabrir sem
+    # estar travado de verdade).
     if instancia.enviando_campanha and instancia.disparo_iniciado_em:
-        limite_tempo = timedelta(seconds=instancia.limite_diario_envios * DELAY_MAX_SEGUNDOS * 1.5)
+        pausa_horario_comercial = timedelta(hours=24 - (HORARIO_COMERCIAL_FIM - HORARIO_COMERCIAL_INICIO))
+        limite_tempo = (
+            timedelta(seconds=instancia.limite_diario_envios * DELAY_MAX_SEGUNDOS * 1.5)
+            + pausa_horario_comercial
+        )
         if timezone.now() - instancia.disparo_iniciado_em > limite_tempo:
             logger.warning(
                 f'Disparo da instância {instancia.instance_name} travado desde '
