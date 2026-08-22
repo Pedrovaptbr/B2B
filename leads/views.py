@@ -547,6 +547,18 @@ def disparar_campanha_view(request, campanha_id):
         messages.error(request, spintax_erro)
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
+    # Hashtag também é obrigatória quando há mensagem de texto (só não se
+    # aplica pra campanha só-de-anexo, já que hashtag é anexada ao texto e
+    # nunca é usada se não houver mensagem_padrao) — mesma lógica da
+    # variação de mensagem: não depender do usuário lembrar de configurar.
+    if campanha.mensagem_padrao and not campanha.hashtags_finais_lista:
+        messages.error(
+            request,
+            'Configure pelo menos uma hashtag antes de disparar a campanha — ela varia o '
+            'formato da mensagem a cada envio e ajuda a reduzir o risco de bloqueio.'
+        )
+        return redirect('leads:campanha_detalhes', pk=campanha_id)
+
     try:
         instancia = request.user.whatsapp_instance
         estado_api = services.get_instance_connection_state(instancia.instance_name)
