@@ -108,7 +108,6 @@
             <div class="flex items-start gap-3 min-w-0">
                 {% if not result.ja_esta_na_campanha %}
                 <input type="checkbox" name="place_ids" value="{{ result.place_id }}"
-                       data-custo="{% if result.ja_foi_extraido %}0{% else %}1{% endif %}"
                        class="result-checkbox mt-1 w-4 h-4 flex-shrink-0 rounded border-white/20 bg-white/5 text-green-500 focus:ring-green-500/50">
                 {% endif %}
                 <div class="min-w-0">
@@ -138,8 +137,8 @@
                 <a href="{% url 'leads:extract_lead' campanha_id=campanha.id place_id=result.place_id %}?{{ request.GET.urlencode }}"
                    class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg text-white hover:opacity-90 transition-opacity"
                    style="background: linear-gradient(135deg, #25D366, #128C7E);"
-                   title="Custo: 1 crédito">
-                    <i class="fas fa-plus"></i>Extrair · 1 crédito
+                   title="Adicionar à campanha (grátis)">
+                    <i class="fas fa-plus"></i>Extrair
                 </a>
                 {% endif %}
             </div>
@@ -265,12 +264,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!bulkBtn) return;
         const marcadas = checkboxes.filter(c => c.checked);
         const total = marcadas.length;
-        const custo = marcadas.reduce((s, c) => s + parseInt(c.dataset.custo || '0', 10), 0);
         bulkBtn.disabled = total === 0;
         if (total === 0) {
             bulkLabel.textContent = 'Extrair selecionadas';
         } else {
-            bulkLabel.textContent = `Extrair ${total} selecionada(s) · ${custo} crédito(s)`;
+            bulkLabel.textContent = `Extrair ${total} selecionada(s)`;
         }
         if (selectAll) {
             selectAll.checked = total > 0 && total === checkboxes.length;
