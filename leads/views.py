@@ -417,6 +417,11 @@ SEGUNDOS_POR_CARACTERE_MIN = 0.12
 SEGUNDOS_POR_CARACTERE_MAX = 0.25
 DELAY_MAX_SEGUNDOS = 600          # teto de segurança (10 min) mesmo p/ mensagens longas
 
+# Com menos que isso, a "variação" de hashtag não varia nada de verdade —
+# com só 1 opção cadastrada, toda mensagem sairia com a mesma hashtag
+# sempre, reproduzindo o padrão repetitivo que a exigência existe pra evitar.
+HASHTAGS_MINIMAS = 3
+
 
 def _calcular_delay_natural(mensagem):
     """
@@ -551,11 +556,14 @@ def disparar_campanha_view(request, campanha_id):
     # aplica pra campanha só-de-anexo, já que hashtag é anexada ao texto e
     # nunca é usada se não houver mensagem_padrao) — mesma lógica da
     # variação de mensagem: não depender do usuário lembrar de configurar.
-    if campanha.mensagem_padrao and not campanha.hashtags_finais_lista:
+    # Exige um mínimo de opções (não só "não vazio"): com 1 ou 2 hashtags a
+    # repetição ainda é alta demais pra funcionar como variação de verdade.
+    if campanha.mensagem_padrao and len(campanha.hashtags_finais_lista) < HASHTAGS_MINIMAS:
         messages.error(
             request,
-            'Configure pelo menos uma hashtag antes de disparar a campanha — ela varia o '
-            'formato da mensagem a cada envio e ajuda a reduzir o risco de bloqueio.'
+            f'Configure pelo menos {HASHTAGS_MINIMAS} opções de hashtag antes de disparar a '
+            'campanha — com poucas opções a mensagem repete demais, o que é exatamente o '
+            'padrão que a variação existe pra evitar.'
         )
         return redirect('leads:campanha_detalhes', pk=campanha_id)
 
