@@ -112,12 +112,12 @@
                 Hashtags no final da mensagem (opcional)
             </label>
             <p class="text-xs text-gray-600 mb-2">
-                Cadastre variações de hashtag (ex: <strong class="text-gray-500">#visão perfeita</strong>, <strong class="text-gray-500">#dispare</strong>). A cada envio, uma delas é escolhida aleatoriamente e adicionada ao final da mensagem. Pode digitar direto na última linha da mensagem acima (ex: <strong class="text-gray-500">#tag1 #tag2</strong>) ou usar a lista abaixo — os dois ficam sincronizados.
+                Cadastre variações de hashtag (ex: <strong class="text-gray-500">#B2BZap</strong>, <strong class="text-gray-500">#PropostaComercial</strong>). A cada envio, uma delas é escolhida aleatoriamente e adicionada ao final da mensagem. Pode digitar direto na última linha da mensagem acima (ex: <strong class="text-gray-500">#tag1 #tag2</strong>) ou usar a lista abaixo — os dois ficam sincronizados.
             </p>
             <div id="hashtag-opcoes" class="space-y-2 mb-2">
                 {% for h in campanha.hashtags_finais_lista %}
                 <div class="flex items-center gap-2 hashtag-row">
-                    <input type="text" name="hashtag_opcao" value="{{ h }}" placeholder="Ex: #visão perfeita"
+                    <input type="text" name="hashtag_opcao" value="{{ h }}" placeholder="Ex: #B2BZap"
                            class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors">
                     <button type="button" class="btn-remove-hashtag text-gray-600 hover:text-red-400 transition-colors p-1.5" title="Remover">
                         <i class="fas fa-times"></i>
@@ -125,7 +125,7 @@
                 </div>
                 {% empty %}
                 <div class="flex items-center gap-2 hashtag-row">
-                    <input type="text" name="hashtag_opcao" value="" placeholder="Ex: #visão perfeita"
+                    <input type="text" name="hashtag_opcao" value="" placeholder="Ex: #B2BZap"
                            class="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors">
                     <button type="button" class="btn-remove-hashtag text-gray-600 hover:text-red-400 transition-colors p-1.5" title="Remover">
                         <i class="fas fa-times"></i>
@@ -522,7 +522,7 @@
         input.type = 'text';
         input.name = 'hashtag_opcao';
         input.value = valor || '';
-        input.placeholder = 'Ex: #visão perfeita';
+        input.placeholder = 'Ex: #B2BZap';
         input.className = 'flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-green-500/50 transition-colors';
         row.appendChild(input);
 
